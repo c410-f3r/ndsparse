@@ -1,5 +1,4 @@
 [dependencies]
-cfg-if = "0.1"
 ndsparse = { features = ["alloc"], path = "../ndsparse" }
 pyo3 = { branch = "array-impls", features = ["extension-module"], git = "https://github.com/c410-f3r/pyo3" }
 wasm-bindgen = { branch = "array-impls", git = "https://github.com/c410-f3r/wasm-bindgen" }
