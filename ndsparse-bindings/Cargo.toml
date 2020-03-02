@@ -1,7 +1,11 @@
 [dependencies]
 ndsparse = { features = ["alloc"], path = "../ndsparse" }
-pyo3 = { branch = "array-impls", features = ["extension-module"], git = "https://github.com/c410-f3r/pyo3" }
-wasm-bindgen = { branch = "array-impls", git = "https://github.com/c410-f3r/wasm-bindgen" }
+pyo3 = { branch = "array-impls", features = ["extension-module"], git = "https://github.com/c410-f3r/pyo3", optional = true }
+wasm-bindgen = { branch = "array-impls", git = "https://github.com/c410-f3r/wasm-bindgen", optional = true }
+
+[features]
+with_pyo3 = ["pyo3"]
+with_wasm_bindgen = ["wasm-bindgen"]
 
 [lib]
 crate-type = ["cdylib"]

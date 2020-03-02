@@ -4,7 +4,9 @@
 #![allow(incomplete_features)]
 #![feature(const_generics)]
 
+#[cfg(feature = "with_pyo3")]
 use pyo3::prelude::*;
+#[cfg(feature = "with_wasm_bindgen")]
 use wasm_bindgen::prelude::*;
 
 macro_rules! create_csl {
@@ -16,16 +18,16 @@ macro_rules! create_csl {
     $offs_storage:ty,
     $dims:literal
   ) => {
-    #[pyclass]
-    #[wasm_bindgen]
+    #[cfg_attr(feature = "with_pyo3", pyclass)]
+    #[cfg_attr(feature = "with_wasm_bindgen", wasm_bindgen)]
     #[derive(Debug)]
     pub struct $struct_name {
       csl: ndsparse::csl::Csl<$data_ty, $data_storage, $indcs_storage, $offs_storage, $dims>,
     }
 
-    #[pymethods]
+    #[cfg_attr(feature = "with_pyo3", pymethods)]
     impl $struct_name {
-      #[new]
+      #[cfg_attr(feature = "with_pyo3", new)]
       pub fn new(
         dims: [usize; $dims],
         data: $data_storage,
@@ -52,6 +54,7 @@ macro_rules! create_csl {
       }
     }
 
+    #[cfg(feature = "with_pyo3")]
     #[pymethods]
     impl $struct_name {
       pub fn data_py(&self) -> PyResult<Vec<$data_ty>> {
@@ -67,7 +70,7 @@ macro_rules! create_csl {
       }
     }
 
-    #[wasm_bindgen]
+    #[cfg_attr(feature = "with_wasm_bindgen", wasm_bindgen)]
     impl $struct_name {
       pub fn data(&self) -> Vec<$data_ty> {
         self.csl.data().to_vec()
