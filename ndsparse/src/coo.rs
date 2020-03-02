@@ -1,4 +1,4 @@
-//! dasdas
+//! COO (Coordinate) format for N-dimensions.
 
 mod coo_utils;
 
@@ -34,7 +34,7 @@ pub type CooStaticVec<DATA, const DIMS: usize, const NNZ: usize> =
 /// COO backed by a dynamic vector.
 pub type CooVec<DATA, const DIMS: usize> = Coo<DATA, Vec<(ArrayWrapper<usize, DIMS>, DATA)>, DIMS>;
 
-/// dasdasdas
+/// Base structure for all COO* variants.
 #[cfg_attr(feature = "with_serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Coo<DATA, DS, const DIMS: usize> {
