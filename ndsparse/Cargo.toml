@@ -1,0 +1,39 @@
+[dependencies]
+arrayvec = { default-features = false, optional = true, version = "0.5" }
+cl-traits = "0.4"
+rand = { default-features = false, optional = true, version = "0.7" }
+rayon = { default-features = false, optional = true, version = "1.0" }
+serde = { default-features = false, features = ["derive"], optional = true, version = "1.0" }
+smallvec = { default-features = false, optional = true, version = "1.2" }
+staticvec = { default-features = false, optional = true, version = "0.8" }
+
+[dev-dependencies]
+once_cell = "1.3"
+quickcheck = "0.9"
+quickcheck_macros = "0.9"
+
+[features]
+alloc = ["cl-traits/alloc", "rand/alloc", "serde/alloc"]
+default = []
+std = ["rand/std", "serde/std"]
+with_arrayvec = ["arrayvec", "cl-traits/with_arrayvec"]
+with_serde = ["cl-traits/with_serde", "serde"]
+with_smallvec = ["cl-traits/with_smallvec", "smallvec"]
+with_staticvec = ["staticvec", "cl-traits/with_staticvec"]
+with_rand = ["rand"]
+with_rayon = ["rayon", "std"]
+
+[package]
+authors = ["Caio Fernandes <c410.f3r@gmail.com>"]
+categories = ["data-structures", "concurrency", "science", "no-std"]
+description = "Sparse structures for N-dimensions"
+edition = "2018"
+keywords = ["coo", "csc", "csr", "dimension", "dimensional", "sparse", "structure"]
+license = "Apache-2.0"
+name = "ndsparse"
+readme = "README.md"
+repository = "https://github.com/c410-f3r/ndsarray"
+version = "0.1.0"
+
+[package.metadata.docs.rs]
+all-features = true

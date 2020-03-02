@@ -1,0 +1,12 @@
+[dependencies]
+ndsparse = { features = ["with_arrayvec", "with_smallvec", "with_staticvec"], path = "../ndsparse" }
+
+[[example]]
+name = "dynamic_arrays"
+path = "dynamic_arrays.rs"
+
+[package]
+edition = "2018"
+name = "examples"
+publish = false
+version = "0.0.0"
