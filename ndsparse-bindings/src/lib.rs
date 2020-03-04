@@ -6,8 +6,6 @@
 
 #[cfg(feature = "with_pyo3")]
 use pyo3::prelude::*;
-#[cfg(feature = "with_wasm_bindgen")]
-use wasm_bindgen::prelude::*;
 
 macro_rules! create_csl {
   (
@@ -19,7 +17,6 @@ macro_rules! create_csl {
     $dims:literal
   ) => {
     #[cfg_attr(feature = "with_pyo3", pyclass)]
-    #[cfg_attr(feature = "with_wasm_bindgen", wasm_bindgen)]
     #[derive(Debug)]
     pub struct $struct_name {
       csl: ndsparse::csl::Csl<$data_ty, $data_storage, $indcs_storage, $offs_storage, $dims>,
@@ -70,7 +67,6 @@ macro_rules! create_csl {
       }
     }
 
-    #[cfg_attr(feature = "with_wasm_bindgen", wasm_bindgen)]
     impl $struct_name {
       pub fn data(&self) -> Vec<$data_ty> {
         self.csl.data().to_vec()

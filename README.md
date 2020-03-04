@@ -32,7 +32,7 @@ fn main() {
 
 ## Optional features
 
-- Bindings (py03, wasm-bindgen)
+- Bindings (py03)
 - Deserialization/Serialization (serde)
 - Dynamic arrays (ArrayVec, SmallVec and StaticVec)
 - Parallel iterators (rayon)
