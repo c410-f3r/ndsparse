@@ -19,7 +19,7 @@ std = ["rand/std", "serde/std"]
 with_arrayvec = ["arrayvec", "cl-traits/with_arrayvec"]
 with_serde = ["cl-traits/with_serde", "serde"]
 with_smallvec = ["cl-traits/with_smallvec", "smallvec"]
-with_staticvec = ["staticvec", "cl-traits/with_staticvec"]
+with_staticvec = ["cl-traits/with_staticvec", "staticvec"]
 with_rand = ["rand"]
 with_rayon = ["rayon", "std"]
 
