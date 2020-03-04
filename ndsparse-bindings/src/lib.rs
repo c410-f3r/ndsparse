@@ -25,9 +25,9 @@ macro_rules! create_csl {
       csl: ndsparse::csl::Csl<$data_ty, $data_storage, $indcs_storage, $offs_storage, $dims>,
     }
 
-    #[cfg_attr(feature = "with_pyo3", pymethods)]
+    //#[cfg_attr(feature = "with_pyo3", pymethods)] -> https://github.com/PyO3/pyo3/issues/780
     impl $struct_name {
-      #[cfg_attr(feature = "with_pyo3", new)]
+      //#[cfg_attr(feature = "with_pyo3", new)] -> https://github.com/PyO3/pyo3/issues/780
       pub fn new(
         dims: [usize; $dims],
         data: $data_storage,
