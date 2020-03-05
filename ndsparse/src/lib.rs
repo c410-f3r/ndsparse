@@ -21,8 +21,6 @@ extern crate alloc;
 pub mod coo;
 pub mod csl;
 pub mod doc_tests;
-#[cfg(test)]
-mod tests;
 mod utils;
 
 pub use cl_traits::ArrayWrapper;
