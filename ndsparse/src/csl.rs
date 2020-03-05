@@ -201,10 +201,8 @@ where
     assert!(
       {
         let mut is_valid = true;
-        if let Some(idx) = dims.iter().rev().position(|dim| *dim == 0) {
-          if idx > 0 && dims[idx - 1] != 0 {
-            is_valid = false
-          }
+        if let Some(idx) = dims.iter().position(|dim| *dim != 0) {
+          is_valid = dims[idx..].iter().all(|dim| *dim != 0);
         }
         is_valid
       },
@@ -334,6 +332,14 @@ where
   /// );
   /// assert_eq!(iter.next(), None);
   /// ```
+  ///
+  /// # Assertions
+  ///
+  /// * `DIMS` must be greater than 1
+  /// ```rust,should_panic
+  /// use ndsparse::csl::CslVec;
+  /// let _ = CslVec::<i32, 1>::default().outermost_iter();
+  /// ```
   pub fn outermost_iter(&self) -> CsIterRef<'_, DATA, DIMS> {
     CsIterRef::new(&self.dims, self.data.as_ref().as_ptr(), self.indcs.as_ref(), self.offs.as_ref())
   }
@@ -343,7 +349,7 @@ where
   ///
   /// # Examples
   ///
-  /// ```rust
+  /// ```rust,
   /// use ndsparse::doc_tests::csl_array_4;
   /// use rayon::prelude::*;
   /// let csl = csl_array_4();
@@ -351,6 +357,14 @@ where
   /// outermost_rayon_iter.enumerate().for_each(|(idx, csl_ref)| {
   ///   assert_eq!(csl_ref, csl.outermost_iter().nth(idx).unwrap());
   /// });
+  /// ```
+  ///
+  /// # Assertions
+  ///
+  /// * `DIMS` must be greater than 1
+  /// ```rust,should_panic
+  /// use ndsparse::csl::CslVec;
+  /// let _ = CslVec::<i32, 1>::default().outermost_rayon_iter();
   /// ```
   #[cfg(feature = "with_rayon")]
   pub fn outermost_rayon_iter(&self) -> crate::ParallelIteratorWrapper<CsIterRef<'_, DATA, DIMS>> {

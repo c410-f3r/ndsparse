@@ -62,7 +62,7 @@ where
       offs: &$($mut)? []
     },
     1 => {
-      let [start_off_value, end_off_value] = [offs_ref[0], offs_ref[1]];
+      let [start_off_value, end_off_value] = [0, offs_ref[1] - offs_ref[0]];
       let indcs = &indcs_ref[start_off_value..end_off_value];
       let start = indcs.binary_search(&range.start).unwrap_or_else(|x| x);
       let end = indcs[start..].binary_search(&range.end).unwrap_or_else(|x| x);

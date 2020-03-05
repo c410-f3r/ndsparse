@@ -43,9 +43,9 @@ where
     let rng = &mut self.rng;
     self.csl.offs.as_ref().windows(2).enumerate().for_each(|(line_idx, offset)| {
       let mut dims = *orig_dims;
-      dims[0] = line_idx % outermost_stride;
-      for (dim, orig_dim) in dims.iter_mut().zip(orig_dims.iter()).skip(1).rev().skip(1) {
-        *dim = line_idx % orig_dim;
+      dims[0] = if outermost_stride == 0 { 0 } else { line_idx % outermost_stride };
+      for (dim, &orig_dim) in dims.iter_mut().zip(orig_dims.iter()).skip(1).rev().skip(1) {
+        *dim = if orig_dim == 0 { 0 } else { line_idx % orig_dim };
       }
       for innermost_idx in indcs[offset[0]..offset[1]].iter().copied() {
         *dims.last_mut().unwrap() = innermost_idx;

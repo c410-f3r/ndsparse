@@ -28,15 +28,10 @@ macro_rules! impl_iter {
         indcs: &'a [usize],
         offs: &'a [usize],
       ) -> Self {
+        assert!(N > 1);
         let mut dims = *orig_dims;
-        let max_idx = match N {
-          0 => 0,
-          1 => 1,
-          _ => {
-            dims[0] = 1;
-            orig_dims[0]
-          }
-        };
+        dims[0] = 1;
+        let max_idx = orig_dims[0];
         $csl_iter { curr_idx: 0, data, dims, indcs, max_idx, offs }
       }
 
