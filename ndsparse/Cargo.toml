@@ -33,7 +33,7 @@ license = "Apache-2.0"
 name = "ndsparse"
 readme = "README.md"
 repository = "https://github.com/c410-f3r/ndsparse/"
-version = "0.1.0"
+version = "0.1.1"
 
 [package.metadata.docs.rs]
 all-features = true
