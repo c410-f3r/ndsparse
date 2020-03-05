@@ -11,7 +11,7 @@
 #![feature(const_generics)]
 #![forbid(missing_debug_implementations, missing_docs)]
 
-//! # Ndsparse
+//! # ndsparse
 //!
 //! This crate provides structures to store and retrieve N-dimensional sparse data.
 

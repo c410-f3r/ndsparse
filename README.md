@@ -1,4 +1,4 @@
-# Ndsparse 
+# ndsparse 
 
 This crate provides structures to store and retrieve N-dimensional sparse data.
 Well, not any `N ∈ ℕ` but any natural number that fits into the pointer size of the machine that you are using. E.g., an 8-bit microcontroller can manipulate any sparse structure with up to 255 dimensions.
