@@ -1,5 +1,6 @@
 use crate::csl::{max_nnz, offs_len, outermost_stride, Csl};
 use cl_traits::Push;
+use core::cmp::Ordering;
 use rand::{
   distributions::{Distribution, Uniform},
   Rng,
@@ -63,7 +64,7 @@ where
       let line_nnz = offset[1] - offset[0];
       while counter < line_nnz {
         let rnd = rng.gen_range(0, *dims.last().unwrap());
-        if indcs.as_ref()[offset[0]..].contains(&rnd) == false {
+        if !indcs.as_ref()[offset[0]..].contains(&rnd) {
           indcs.push(rnd);
           counter += 1;
         }
@@ -79,15 +80,19 @@ where
     let nnz = Uniform::from(0..=max_nnz(&self.csl.dims)).sample(self.rng);
     let mut previous_off = 0;
     for idx in 1..self.csl.offs.as_ref().len() {
-      if previous_off == nnz {
-        *self.csl.offs.as_mut().get_mut(idx).unwrap() = nnz;
-      } else if previous_off > nnz {
-        *self.csl.offs.as_mut().get_mut(idx - 1).unwrap() = nnz;
-        *self.csl.offs.as_mut().get_mut(idx).unwrap() = nnz;
-      } else {
-        let innermost_dim_len = *self.csl.dims.last().unwrap();
-        let line_nnz = Uniform::from(0..=innermost_dim_len).sample(self.rng);
-        *self.csl.offs.as_mut().get_mut(idx).unwrap() = previous_off + line_nnz;
+      match previous_off.cmp(&nnz) {
+        Ordering::Equal => {
+          *self.csl.offs.as_mut().get_mut(idx).unwrap() = nnz;
+        }
+        Ordering::Greater => {
+          *self.csl.offs.as_mut().get_mut(idx - 1).unwrap() = nnz;
+          *self.csl.offs.as_mut().get_mut(idx).unwrap() = nnz;
+        }
+        Ordering::Less => {
+          let innermost_dim_len = *self.csl.dims.last().unwrap();
+          let line_nnz = Uniform::from(0..=innermost_dim_len).sample(self.rng);
+          *self.csl.offs.as_mut().get_mut(idx).unwrap() = previous_off + line_nnz;
+        }
       }
       previous_off = *self.csl.offs.as_ref().get(idx).unwrap();
     }

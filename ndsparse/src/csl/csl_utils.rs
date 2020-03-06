@@ -134,8 +134,8 @@ pub fn line_offs<const DIMS: usize>(
     _ => {
       let diff = indcs.len() - 2;
       let mut lines = 0;
-      for idx in 0..diff {
-        lines += dims.iter().skip(idx + 1).rev().skip(1).product::<usize>() * indcs[idx];
+      for (idx, curr_idx) in indcs.iter().enumerate().take(diff) {
+        lines += dims.iter().skip(idx + 1).rev().skip(1).product::<usize>() * curr_idx;
       }
       lines += indcs[dims.len() - 2];
       Some([lines..lines + 2, offs[lines]..offs[lines + 1]])

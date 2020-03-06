@@ -122,7 +122,7 @@ where
       "All indices must be lesser than the defined dimensions"
     );
     assert!(
-      does_not_have_duplicates_sorted(data.as_ref(), |a, b| &a.0[..] != &b.0[..]),
+      does_not_have_duplicates_sorted(data.as_ref(), |a, b| a.0[..] != b.0[..]),
       "Must not have duplicated indices"
     );
     Self { data, dims, phantom: PhantomData }
@@ -164,6 +164,10 @@ where
   DS: AsMut<[(ArrayWrapper<usize, DIMS>, DATA)]>,
 {
   /// Mutable version of [`data`](#method.data).
+  ///
+  /// # Safety
+  ///
+  /// Indices can be modified to overflow its dimensions.
   pub unsafe fn data_mut(&mut self) -> &[(ArrayWrapper<usize, DIMS>, DATA)] {
     self.data.as_mut()
   }
