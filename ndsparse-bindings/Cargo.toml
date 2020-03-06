@@ -1,9 +1,11 @@
 [dependencies]
 ndsparse = { features = ["alloc"], path = "../ndsparse" }
 pyo3 = { features = ["extension-module"], git = "https://github.com/PyO3/pyo3", optional = true }
+wasm-bindgen = { optional = true, version = "0.2" }
 
 [features]
 with_pyo3 = ["pyo3"]
+with_wasm_bindgen = ["wasm-bindgen"]
 
 [lib]
 crate-type = ["cdylib"]

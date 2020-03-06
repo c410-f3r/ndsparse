@@ -1,11 +1,17 @@
 //! Basic structures to experiment with other languages. This crate is intended to be used
 //! as a template for your own custom needs.
+//!
+//! The array support of these third-parties dependencies is minimum to non-existent, threfore,
+//! the overhead of heap allocating.
 
 #![allow(incomplete_features)]
 #![feature(const_generics)]
 
+use ndsparse::csl::Csl;
 #[cfg(feature = "with_pyo3")]
 use pyo3::prelude::*;
+#[cfg(feature = "with_wasm_bindgen")]
+use wasm_bindgen::prelude::*;
 
 macro_rules! create_csl {
   (
@@ -17,14 +23,44 @@ macro_rules! create_csl {
     $dims:literal
   ) => {
     #[cfg_attr(feature = "with_pyo3", pyclass)]
+    #[cfg_attr(feature = "with_wasm_bindgen", wasm_bindgen)]
     #[derive(Debug)]
     pub struct $struct_name {
-      csl: ndsparse::csl::Csl<$data_ty, $data_storage, $indcs_storage, $offs_storage, $dims>,
+      csl: Csl<$data_ty, $data_storage, $indcs_storage, $offs_storage, $dims>,
     }
 
-    //#[cfg_attr(feature = "with_pyo3", pymethods)] -> https://github.com/PyO3/pyo3/issues/780
+    // Generic
+
+    #[cfg_attr(feature = "with_pyo3", pymethods)]
+    #[cfg_attr(feature = "with_wasm_bindgen", wasm_bindgen)]
     impl $struct_name {
-      //#[cfg_attr(feature = "with_pyo3", new)] -> https://github.com/PyO3/pyo3/issues/780
+      pub fn clear(&mut self) {
+        self.csl.clear()
+      }
+
+      pub fn data_vec(&self) -> Vec<$data_ty> {
+        self.csl.data().to_vec()
+      }
+
+      pub fn indcs_vec(&self) -> Vec<usize> {
+        self.csl.indcs().to_vec()
+      }
+
+      pub fn offs_vec(&self) -> Vec<usize> {
+        self.csl.offs().to_vec()
+      }
+
+      pub fn nnz(&self) -> usize {
+        self.csl.nnz()
+      }
+    }
+
+    // PyO3
+
+    #[cfg(feature = "with_pyo3")]
+    #[pymethods]
+    impl $struct_name {
+      #[new]
       pub fn new(
         dims: [usize; $dims],
         data: $data_storage,
@@ -34,50 +70,41 @@ macro_rules! create_csl {
         Self { csl: ndsparse::csl::Csl::new(dims, data, indcs, offs) }
       }
 
-      pub fn clear(&mut self) {
-        self.csl.clear()
-      }
-
-      pub fn dims(&self) -> [usize; $dims] {
-        *self.csl.dims()
-      }
-
-      pub fn nnz(&self) -> usize {
-        self.csl.nnz()
-      }
-
       pub fn truncate(&mut self, dims: [usize; $dims]) {
         self.csl.truncate(dims)
       }
-    }
 
-    #[cfg(feature = "with_pyo3")]
-    #[pymethods]
-    impl $struct_name {
-      pub fn data_py(&self) -> PyResult<Vec<$data_ty>> {
-        Ok(self.csl.data().to_vec())
-      }
-
-      pub fn indcs_py(&self) -> PyResult<Vec<usize>> {
-        Ok(self.csl.indcs().to_vec())
-      }
-
-      pub fn offs_py(&self) -> PyResult<Vec<usize>> {
-        Ok(self.csl.offs().to_vec())
+      pub fn value(&self, dims: [usize; $dims]) -> Option<$data_ty> {
+        self.csl.value(dims).copied()
       }
     }
 
+    // wasm-bindgen
+
+    #[cfg(feature = "with_wasm_bindgen")]
+    #[wasm_bindgen]
     impl $struct_name {
-      pub fn data(&self) -> Vec<$data_ty> {
-        self.csl.data().to_vec()
+      #[wasm_bindgen(constructor)]
+      pub fn new_vec(
+        dims_vec: Vec<usize>,
+        data: $data_storage,
+        indcs: $indcs_storage,
+        offs: $offs_storage,
+      ) -> Self {
+        let dims = from_vec_to_array(dims_vec);
+        Self { csl: ndsparse::csl::Csl::new(dims, data, indcs, offs) }
       }
 
-      pub fn indcs(&self) -> Vec<usize> {
-        self.csl.indcs().to_vec()
+      pub fn dims_vec(&self) -> Vec<usize> {
+        self.csl.dims().to_vec()
       }
 
-      pub fn offs(&self) -> Vec<usize> {
-        self.csl.offs().to_vec()
+      pub fn truncate_vec(&mut self, dims_vec: Vec<usize>) {
+        self.csl.truncate(from_vec_to_array(dims_vec))
+      }
+
+      pub fn value_vec(&self, dims_vec: Vec<usize>) -> Option<$data_ty> {
+        self.csl.value(from_vec_to_array(dims_vec)).copied()
       }
     }
   };
@@ -100,3 +127,14 @@ create_csl!(Csl4VecF64, f64, Vec<f64>, Vec<usize>, Vec<usize>, 4);
 create_csl!(Csl5VecF64, f64, Vec<f64>, Vec<usize>, Vec<usize>, 5);
 create_csl!(Csl6VecF64, f64, Vec<f64>, Vec<usize>, Vec<usize>, 6);
 create_csl!(Csl7VecF64, f64, Vec<f64>, Vec<usize>, Vec<usize>, 7);
+
+#[cfg(feature = "with_wasm_bindgen")]
+fn from_vec_to_array<T, const N: usize>(vec: Vec<T>) -> [T; N]
+where
+  T: Default,
+{
+  assert!(vec.len() >= N);
+  let mut array = ndsparse::ArrayWrapper::default();
+  vec.into_iter().enumerate().for_each(|(idx, elem)| array[idx] = elem);
+  array.into()
+}
