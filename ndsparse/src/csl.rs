@@ -35,9 +35,9 @@ pub type CslArray<DATA, const DIMS: usize, const NNZ: usize, const OFFS: usize> 
 /// CSL backed by the `ArrayVec` dependency.
 pub type CslArrayVec<DATA, const DIMS: usize, const NNZ: usize, const OFFS: usize> = Csl<
   DATA,
-  arrayvec::ArrayVec<ArrayWrapper<DATA, NNZ>>,
-  arrayvec::ArrayVec<ArrayWrapper<usize, NNZ>>,
-  arrayvec::ArrayVec<ArrayWrapper<usize, OFFS>>,
+  cl_traits::ArrayVecArrayWrapper<DATA, NNZ>,
+  cl_traits::ArrayVecArrayWrapper<usize, NNZ>,
+  cl_traits::ArrayVecArrayWrapper<usize, OFFS>,
   DIMS,
 >;
 /// Mutable CSL reference.
@@ -50,9 +50,9 @@ pub type CslRef<'a, DATA, const DIMS: usize> =
 /// CSL backed by the `SmallVec` dependency.
 pub type CslSmallVec<DATA, const DIMS: usize, const NNZ: usize, const OFFS: usize> = Csl<
   DATA,
-  smallvec::SmallVec<ArrayWrapper<DATA, NNZ>>,
-  smallvec::SmallVec<ArrayWrapper<usize, NNZ>>,
-  smallvec::SmallVec<ArrayWrapper<usize, OFFS>>,
+  cl_traits::SmallVecArrayWrapper<DATA, NNZ>,
+  cl_traits::SmallVecArrayWrapper<usize, NNZ>,
+  cl_traits::SmallVecArrayWrapper<usize, OFFS>,
   DIMS,
 >;
 #[cfg(feature = "with_staticvec")]

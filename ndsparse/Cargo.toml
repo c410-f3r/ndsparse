@@ -1,10 +1,8 @@
 [dependencies]
-arrayvec = { default-features = false, optional = true, version = "0.5" }
 cl-traits = "0.4"
 rand = { default-features = false, optional = true, version = "0.7" }
 rayon = { default-features = false, optional = true, version = "1.0" }
 serde = { default-features = false, features = ["derive"], optional = true, version = "1.0" }
-smallvec = { default-features = false, optional = true, version = "1.2" }
 staticvec = { default-features = false, optional = true, version = "0.8" }
 
 [dev-dependencies]
@@ -16,12 +14,12 @@ quickcheck_macros = "0.9"
 alloc = ["cl-traits/alloc", "rand/alloc", "serde/alloc"]
 default = []
 std = ["rand/std", "serde/std"]
-with_arrayvec = ["arrayvec", "cl-traits/with_arrayvec"]
-with_serde = ["cl-traits/with_serde", "serde"]
-with_smallvec = ["cl-traits/with_smallvec", "smallvec"]
-with_staticvec = ["cl-traits/with_staticvec", "staticvec"]
+with_arrayvec = ["cl-traits/with_arrayvec"]
 with_rand = ["rand"]
 with_rayon = ["rayon", "std"]
+with_serde = ["cl-traits/with_serde", "serde"]
+with_smallvec = ["cl-traits/with_smallvec"]
+with_staticvec = ["cl-traits/with_staticvec", "staticvec"]
 
 [package]
 authors = ["Caio Fernandes <c410.f3r@gmail.com>"]

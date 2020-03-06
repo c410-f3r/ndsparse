@@ -15,7 +15,7 @@ pub type CooArray<DATA, const DIMS: usize, const NNZ: usize> =
 #[cfg(feature = "with_arrayvec")]
 /// COO backed by the `ArrayVec` dependency.
 pub type CooArrayVec<DATA, const DIMS: usize, const NNZ: usize> =
-  Coo<DATA, arrayvec::ArrayVec<ArrayWrapper<(ArrayWrapper<usize, DIMS>, DATA), NNZ>>, DIMS>;
+  Coo<DATA, cl_traits::ArrayVecArrayWrapper<(ArrayWrapper<usize, DIMS>, DATA), NNZ>, DIMS>;
 /// Mutable COO reference.
 pub type CooMut<'a, DATA, const DIMS: usize> =
   Coo<DATA, &'a mut [(ArrayWrapper<usize, DIMS>, DATA)], DIMS>;
@@ -25,7 +25,7 @@ pub type CooRef<'a, DATA, const DIMS: usize> =
 #[cfg(feature = "with_smallvec")]
 /// COO backed by the `SmallVec` dependency.
 pub type CooSmallVec<DATA, const DIMS: usize, const NNZ: usize> =
-  Coo<DATA, smallvec::SmallVec<ArrayWrapper<(ArrayWrapper<usize, DIMS>, DATA), NNZ>>, DIMS>;
+  Coo<DATA, cl_traits::SmallVecArrayWrapper<(ArrayWrapper<usize, DIMS>, DATA), NNZ>, DIMS>;
 #[cfg(feature = "with_staticvec")]
 /// COO backed by the `StaticVec` dependency
 pub type CooStaticVec<DATA, const DIMS: usize, const NNZ: usize> =
