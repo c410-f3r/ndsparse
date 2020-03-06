@@ -46,12 +46,12 @@ fn main() {
 
 ## Optional features
 
+- `alloc`
 - Bindings (Py03, wasm-bindgen)
 - Deserialization/Serialization (serde)
 - Dynamic arrays (ArrayVec, SmallVec and StaticVec)
 - Parallel iterators (rayon)
 - Random instances (rand)
-- `std` or `alloc`
 
 ## Nightly compiler
 

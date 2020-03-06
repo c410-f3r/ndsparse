@@ -1,5 +1,5 @@
 #![allow(incomplete_features)]
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(feature = "with_rayon"), no_std)]
 #![deny(rust_2018_idioms)]
 #![doc(test(attr(forbid(
   unused_variables,
@@ -15,7 +15,7 @@
 //!
 //! This crate provides structures to store and retrieve N-dimensional sparse data.
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 extern crate alloc;
 
 pub mod coo;
