@@ -12,7 +12,7 @@ macro_rules! create_rayon_iter {
     impl<'a, T, const N: usize> ParallelIterator
       for ParallelIteratorWrapper<$csl_rayon_iter<'a, T, N>>
     where
-      T: Send + Sync,
+      T: Send + Sync + 'a,
     {
       type Item = $ref<'a, T, N>;
       fn drive_unindexed<C>(self, consumer: C) -> C::Result
@@ -30,7 +30,7 @@ macro_rules! create_rayon_iter {
     impl<'a, T, const N: usize> IndexedParallelIterator
       for ParallelIteratorWrapper<$csl_rayon_iter<'a, T, N>>
     where
-      T: Send + Sync,
+      T: Send + Sync + 'a,
     {
       fn with_producer<Cb>(self, callback: Cb) -> Cb::Output
       where
@@ -51,8 +51,9 @@ macro_rules! create_rayon_iter {
       }
     }
 
-    impl<'a, T, const N: usize> IntoIterator
-      for ParallelProducerWrapper<$csl_rayon_iter<'a, T, N>>
+    impl<'a, T, const N: usize> IntoIterator for ParallelProducerWrapper<$csl_rayon_iter<'a, T, N>>
+    where
+      T: 'a,
     {
       type IntoIter = $csl_rayon_iter<'a, T, N>;
       type Item = <Self::IntoIter as Iterator>::Item;
@@ -62,7 +63,10 @@ macro_rules! create_rayon_iter {
       }
     }
 
-    impl<'a, T, const N: usize> Producer for ParallelProducerWrapper<$csl_rayon_iter<'a, T, N>> {
+    impl<'a, T, const N: usize> Producer for ParallelProducerWrapper<$csl_rayon_iter<'a, T, N>>
+    where
+      T: 'a,
+    {
       type IntoIter = $csl_rayon_iter<'a, T, N>;
       type Item = <Self::IntoIter as Iterator>::Item;
 
