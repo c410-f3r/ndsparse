@@ -103,7 +103,7 @@ where
   IS: AsRef<[usize]>,
   OS: AsRef<[usize]>,
 {
-  assert!(&ArrayWrapper::from(indcs) < &csl.dims);
+  assert!(ArrayWrapper::from(indcs) < csl.dims);
   match DIMS {
     0 => None,
     _ => {
