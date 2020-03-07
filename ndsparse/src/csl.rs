@@ -421,8 +421,8 @@ where
 impl<DATA, DS, IS, OS, const DIMS: usize> Csl<DATA, DS, IS, OS, DIMS>
 where
   DS: AsMut<[DATA]> + AsRef<[DATA]>,
-  IS: AsMut<[usize]> + AsRef<[usize]>,
-  OS: AsMut<[usize]> + AsRef<[usize]>,
+  IS: AsRef<[usize]>,
+  OS: AsRef<[usize]>,
 {
   /// Mutable version of [`data`](#method.data).
   pub fn data_mut(&mut self) -> &mut [DATA] {
