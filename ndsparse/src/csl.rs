@@ -413,7 +413,7 @@ where
   /// use ndsparse::doc_tests::csl_array_4;
   /// assert_eq!(csl_array_4().value([1, 0, 2, 2]), Some(&9));
   /// ```
-  /// 
+  ///
   /// # Assertions
   ///
   /// * `indcs` must be within dimensions bounds
