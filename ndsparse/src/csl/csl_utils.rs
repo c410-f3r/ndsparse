@@ -9,7 +9,6 @@ macro_rules! create_sub_dim {
     $ref:ident
     $line_fn:ident
     $sub_dim_fn:ident
-    $value_fn:ident
     $([$mut:tt])?
 ) => {
 
@@ -89,37 +88,35 @@ where
   }
 }
 
-pub fn $value_fn<'a: 'b, 'b, DATA: 'a, DS, IS, OS, const DIMS: usize>(
-  csl: &'a $($mut)? Csl<DATA, DS, IS, OS, DIMS>,
-  indcs: [usize; DIMS]
-) -> Option<&$($mut)? DATA>
+  };
+}
+
+create_sub_dim!(AsMut as_mut CslMut line_mut sub_dim_mut [mut]);
+create_sub_dim!(AsRef as_ref CslRef line sub_dim);
+
+pub fn data_idx<DATA, DS, IS, OS, const DIMS: usize>(
+  csl: &Csl<DATA, DS, IS, OS, DIMS>,
+  indcs: [usize; DIMS],
+) -> Option<usize>
 where
-  DS: $trait<[DATA]>,
+  DS: AsRef<[DATA]>,
   IS: AsRef<[usize]>,
   OS: AsRef<[usize]>,
 {
+  assert!(&ArrayWrapper::from(indcs) < &csl.dims);
   match DIMS {
     0 => None,
     _ => {
       let innermost_idx = *indcs.last().unwrap();
       let [_, values] = line_offs(&csl.dims, &indcs, csl.offs.as_ref()).unwrap();
-      data_idx(innermost_idx, csl.indcs.as_ref(), values).map(move |idx| {
-        &$($mut)? csl.data.$trait_fn()[idx]
-      })
+      let start = values.start;
+      if let Ok(x) = csl.indcs.as_ref()[values].binary_search(&innermost_idx) {
+        Some(start + x)
+      } else {
+        None
+      }
     }
   }
-}
-
-  };
-}
-
-create_sub_dim!(AsMut as_mut CslMut line_mut sub_dim_mut value_mut [mut]);
-create_sub_dim!(AsRef as_ref CslRef line sub_dim value);
-
-#[inline]
-pub fn data_idx(data_line_idx: usize, indcs: &[usize], off_range: Range<usize>) -> Option<usize> {
-  let start = off_range.start;
-  if let Ok(x) = indcs[off_range].binary_search(&data_line_idx) { Some(start + x) } else { None }
 }
 
 #[inline]

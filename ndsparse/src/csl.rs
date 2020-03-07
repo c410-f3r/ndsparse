@@ -413,8 +413,16 @@ where
   /// use ndsparse::doc_tests::csl_array_4;
   /// assert_eq!(csl_array_4().value([1, 0, 2, 2]), Some(&9));
   /// ```
+  /// 
+  /// # Assertions
+  ///
+  /// * `indcs` must be within dimensions bounds
+  /// ```rust,should_panic
+  /// use ndsparse::doc_tests::csl_array_4;
+  /// let _ = csl_array_4().value([9, 9, 9, 9]);
+  /// ```
   pub fn value(&self, indcs: [usize; DIMS]) -> Option<&DATA> {
-    value(self, indcs)
+    data_idx(self, indcs).map(|idx| &self.data.as_ref()[idx])
   }
 }
 
@@ -459,7 +467,7 @@ where
 
   /// Mutable version of [`value`](#method.value).
   pub fn value_mut(&mut self, indcs: [usize; DIMS]) -> Option<&mut DATA> {
-    value_mut(self, indcs)
+    data_idx(self, indcs).map(move |idx| &mut self.data.as_mut()[idx])
   }
 }
 
@@ -536,6 +544,43 @@ where
     self.data.clear();
     self.indcs.clear();
     self.offs.clear();
+  }
+}
+
+impl<DATA, DS, IS, OS, const DIMS: usize> Csl<DATA, DS, IS, OS, DIMS>
+where
+  DS: AsMut<[DATA]> + AsRef<[DATA]>,
+  IS: AsRef<[usize]>,
+  OS: AsRef<[usize]>,
+{
+  /// Intra-swap a single data value.
+  ///
+  /// # Arguments
+  ///
+  /// * `a`: First set of indices
+  /// * `b`: SEcodn set of indices
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// use ndsparse::doc_tests::csl_vec_4;
+  /// let mut csl = csl_vec_4();
+  /// csl.swap_value([0, 0, 0, 0], [1, 0, 2, 2]);
+  /// assert_eq!(csl.data(), &[9, 2, 3, 4, 5, 6, 7, 8, 1]);
+  /// ```
+  ///
+  /// # Assertions
+  ///
+  /// Uses the same assertions of [`value`](#method.value).
+  pub fn swap_value(&mut self, a: [usize; DIMS], b: [usize; DIMS]) -> bool {
+    assert!(a[..] < self.dims[..] && b[..] < self.dims[..]);
+    if let Some(a_idx) = data_idx(self, a) {
+      if let Some(b_idx) = data_idx(self, b) {
+        self.data.as_mut().swap(a_idx, b_idx);
+        return true;
+      }
+    }
+    false
   }
 }
 
