@@ -42,7 +42,7 @@ fn main() {
 ## Supported structures
 
 - Compressed Sparse Line (CSL)
-- Coorinate format (COO)
+- Coordinate format (COO)
 
 ## Optional features
 

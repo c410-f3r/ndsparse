@@ -558,7 +558,7 @@ where
   /// # Arguments
   ///
   /// * `a`: First set of indices
-  /// * `b`: SEcodn set of indices
+  /// * `b`: Second set of indices
   ///
   /// # Example
   ///
