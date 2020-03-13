@@ -1,6 +1,6 @@
 use crate::csl::{Csl, CslMut, CslRef};
 use cl_traits::{create_array, ArrayWrapper};
-use core::{marker::PhantomData, ops::Range};
+use core::ops::Range;
 
 macro_rules! create_sub_dim {
   (
@@ -14,7 +14,7 @@ macro_rules! create_sub_dim {
 
 #[inline]
 pub fn $line_fn<'a: 'b, 'b, DATA: 'a, DS, IS, OS, const DIMS: usize>(
-  csl: &'a $($mut)? Csl<DATA, DS, IS, OS, DIMS>,
+  csl: &'a $($mut)? Csl<DS, IS, OS, DIMS>,
   indcs: [usize; DIMS]
 ) -> Option<$ref<'b, DATA, 1>>
 where
@@ -31,7 +31,6 @@ where
         dims: [*csl.dims.last().unwrap()].into(),
         indcs: &csl.indcs.as_ref()[values],
         offs: &csl.offs.as_ref()[offs_indcs],
-        phantom: PhantomData
       })
     }
   }
@@ -39,7 +38,7 @@ where
 
 #[inline]
 pub fn $sub_dim_fn<'a: 'b, 'b, DATA: 'a, DS, IS, OS, const DIMS: usize, const N: usize>(
-  csl: &'a $($mut)? Csl<DATA, DS, IS, OS, DIMS>,
+  csl: &'a $($mut)? Csl<DS, IS, OS, DIMS>,
   range: Range<usize>,
 ) -> $ref<'b, DATA, N>
 where
@@ -57,7 +56,6 @@ where
       data: &$($mut)? [],
       dims: create_array(|_| 0usize).into(),
       indcs: &$($mut)? [],
-      phantom: PhantomData,
       offs: &$($mut)? []
     },
     1 => {
@@ -69,7 +67,6 @@ where
         data: &$($mut)? data_ref[start..][..end],
         dims: create_array(|_| dims_ref[DIMS - N]).into(),
         indcs: &indcs_ref[start..][..end],
-        phantom: PhantomData,
         offs: &offs_ref[0..2]
       }
     },
@@ -81,7 +78,6 @@ where
         data: &$($mut)? data_ref[offs_values.clone()],
         dims,
         indcs: &indcs_ref[offs_values],
-        phantom: PhantomData,
         offs: &offs_ref[offs_indcs],
       }
     },
@@ -95,7 +91,7 @@ create_sub_dim!(AsMut as_mut CslMut line_mut sub_dim_mut [mut]);
 create_sub_dim!(AsRef as_ref CslRef line sub_dim);
 
 pub fn data_idx<DATA, DS, IS, OS, const DIMS: usize>(
-  csl: &Csl<DATA, DS, IS, OS, DIMS>,
+  csl: &Csl<DS, IS, OS, DIMS>,
   indcs: [usize; DIMS],
 ) -> Option<usize>
 where

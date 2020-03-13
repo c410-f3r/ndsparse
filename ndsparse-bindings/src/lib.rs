@@ -26,7 +26,7 @@ macro_rules! create_csl {
     #[cfg_attr(feature = "with_wasm_bindgen", wasm_bindgen)]
     #[derive(Debug)]
     pub struct $struct_name {
-      csl: Csl<$data_ty, $data_storage, $indcs_storage, $offs_storage, $dims>,
+      csl: Csl<$data_storage, $indcs_storage, $offs_storage, $dims>,
     }
 
     // Generic
