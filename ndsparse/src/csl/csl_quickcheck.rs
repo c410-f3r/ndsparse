@@ -1,19 +1,19 @@
 use crate::csl::{max_nnz, Csl, CslVec};
 use cl_traits::{ArrayWrapper, Push, Storage};
 
-impl<DS, IS, OS, const DIMS: usize> quickcheck::Arbitrary for Csl<DS, IS, OS, DIMS>
+impl<DATA, DS, IS, OS, const DIMS: usize> quickcheck::Arbitrary for Csl<DS, IS, OS, DIMS>
 where
-  DS: AsMut<[<DS as Storage>::Item]>
-    + AsRef<[<DS as Storage>::Item]>
+  DS: AsMut<[DATA]>
+    + AsRef<[DATA]>
     + Clone
     + Default
-    + Push<Input = <DS as Storage>::Item>
+    + Push<Input = DATA>
     + Send
-    + Storage
+    + Storage<Item = DATA>
     + 'static,
   IS: AsMut<[usize]> + AsRef<[usize]> + Clone + Default + Push<Input = usize> + Send + 'static,
   OS: AsMut<[usize]> + AsRef<[usize]> + Clone + Default + Push<Input = usize> + Send + 'static,
-  rand::distributions::Standard: rand::distributions::Distribution<<DS as Storage>::Item>,
+  rand::distributions::Standard: rand::distributions::Distribution<DATA>,
 {
   #[inline]
   fn arbitrary<G>(g: &mut G) -> Self

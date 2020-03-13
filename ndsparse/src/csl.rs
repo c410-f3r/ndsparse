@@ -98,9 +98,9 @@ impl<DS, IS, OS, const DIMS: usize> Csl<DS, IS, OS, DIMS> {
   }
 }
 
-impl<DS, IS, OS, const DIMS: usize> Csl<DS, IS, OS, DIMS>
+impl<DATA, DS, IS, OS, const DIMS: usize> Csl<DS, IS, OS, DIMS>
 where
-  DS: AsRef<[<DS as Storage>::Item]> + Storage,
+  DS: AsRef<[DATA]> + Storage<Item = DATA>,
   IS: AsRef<[usize]>,
   OS: AsRef<[usize]>,
 {
@@ -249,7 +249,7 @@ where
   /// use ndsparse::doc_tests::csl_array_4;
   /// assert_eq!(csl_array_4().data(), &[1, 2, 3, 4, 5, 6, 7, 8, 9]);
   /// ```
-  pub fn data(&self) -> &[DS::Item] {
+  pub fn data(&self) -> &[DATA] {
     self.data.as_ref()
   }
 
@@ -275,7 +275,7 @@ where
   /// assert_eq!(csl.line([0, 0, 2, 0]), Some(CslRef::new([5], &[][..], &[][..], &[3, 3][..])));
   /// assert_eq!(csl.line([0, 1, 0, 0]), Some(CslRef::new([5], &[6][..], &[2][..], &[5, 6][..])));
   /// ```
-  pub fn line(&self, indcs: [usize; DIMS]) -> Option<CslRef<'_, DS::Item, 1>> {
+  pub fn line(&self, indcs: [usize; DIMS]) -> Option<CslRef<'_, DATA, 1>> {
     line(self, indcs)
   }
 
@@ -339,7 +339,7 @@ where
   /// use ndsparse::csl::CslVec;
   /// let _ = CslVec::<i32, 1>::default().outermost_iter();
   /// ```
-  pub fn outermost_iter(&self) -> CsIterRef<'_, DS::Item, DIMS> {
+  pub fn outermost_iter(&self) -> CsIterRef<'_, DATA, DIMS> {
     CsIterRef::new(&self.dims, self.data.as_ref().as_ptr(), self.indcs.as_ref(), self.offs.as_ref())
   }
 
@@ -366,9 +366,7 @@ where
   /// let _ = CslVec::<i32, 1>::default().outermost_rayon_iter();
   /// ```
   #[cfg(feature = "with_rayon")]
-  pub fn outermost_rayon_iter(
-    &self,
-  ) -> crate::ParallelIteratorWrapper<CsIterRef<'_, <DS as Storage>::Item, DIMS>> {
+  pub fn outermost_rayon_iter(&self) -> crate::ParallelIteratorWrapper<CsIterRef<'_, DATA, DIMS>> {
     crate::ParallelIteratorWrapper(self.outermost_iter())
   }
 
@@ -395,7 +393,7 @@ where
   ///   CslRef::new([2, 4, 5], &[6, 7, 8][..], &[2, 2, 4][..], &[5, 6, 6, 6, 6, 7, 8, 8, 8][..])
   /// );
   /// ```
-  pub fn sub_dim<const N: usize>(&self, range: Range<usize>) -> CslRef<'_, DS::Item, N> {
+  pub fn sub_dim<const N: usize>(&self, range: Range<usize>) -> CslRef<'_, DATA, N> {
     assert!(N <= DIMS);
     sub_dim(self, range)
   }
@@ -420,29 +418,29 @@ where
   /// use ndsparse::doc_tests::csl_array_4;
   /// let _ = csl_array_4().value([9, 9, 9, 9]);
   /// ```
-  pub fn value(&self, indcs: [usize; DIMS]) -> Option<&DS::Item> {
+  pub fn value(&self, indcs: [usize; DIMS]) -> Option<&DATA> {
     data_idx(self, indcs).map(|idx| &self.data.as_ref()[idx])
   }
 }
 
-impl<DS, IS, OS, const DIMS: usize> Csl<DS, IS, OS, DIMS>
+impl<DATA, DS, IS, OS, const DIMS: usize> Csl<DS, IS, OS, DIMS>
 where
-  DS: AsMut<[<DS as Storage>::Item]> + AsRef<[<DS as Storage>::Item]> + Storage,
+  DS: AsMut<[DATA]> + AsRef<[DATA]> + Storage<Item = DATA>,
   IS: AsRef<[usize]>,
   OS: AsRef<[usize]>,
 {
   /// Mutable version of [`data`](#method.data).
-  pub fn data_mut(&mut self) -> &mut [DS::Item] {
+  pub fn data_mut(&mut self) -> &mut [DATA] {
     self.data.as_mut()
   }
 
   /// Mutable version of [`line`](#method.line).
-  pub fn line_mut(&mut self, indcs: [usize; DIMS]) -> Option<CslMut<'_, DS::Item, 1>> {
+  pub fn line_mut(&mut self, indcs: [usize; DIMS]) -> Option<CslMut<'_, DATA, 1>> {
     line_mut(self, indcs)
   }
 
   /// Mutable version of [`outermost_iter`](#method.outermost_iter).
-  pub fn outermost_iter_mut(&mut self) -> CslIterMut<'_, DS::Item, DIMS> {
+  pub fn outermost_iter_mut(&mut self) -> CslIterMut<'_, DATA, DIMS> {
     CslIterMut::new(
       &self.dims,
       self.data.as_mut().as_mut_ptr(),
@@ -455,24 +453,24 @@ where
   #[cfg(feature = "with_rayon")]
   pub fn outermost_rayon_iter_mut(
     &mut self,
-  ) -> crate::ParallelIteratorWrapper<CslIterMut<'_, <DS as Storage>::Item, DIMS>> {
+  ) -> crate::ParallelIteratorWrapper<CslIterMut<'_, DATA, DIMS>> {
     crate::ParallelIteratorWrapper(self.outermost_iter_mut())
   }
 
   /// Mutable version of [`sub_dim`](#method.sub_dim).
-  pub fn sub_dim_mut<const N: usize>(&mut self, range: Range<usize>) -> CslMut<'_, DS::Item, N> {
+  pub fn sub_dim_mut<const N: usize>(&mut self, range: Range<usize>) -> CslMut<'_, DATA, N> {
     sub_dim_mut(self, range)
   }
 
   /// Mutable version of [`value`](#method.value).
-  pub fn value_mut(&mut self, indcs: [usize; DIMS]) -> Option<&mut DS::Item> {
+  pub fn value_mut(&mut self, indcs: [usize; DIMS]) -> Option<&mut DATA> {
     data_idx(self, indcs).map(move |idx| &mut self.data.as_mut()[idx])
   }
 }
 
-impl<DS, IS, OS, const DIMS: usize> Csl<DS, IS, OS, DIMS>
+impl<DATA, DS, IS, OS, const DIMS: usize> Csl<DS, IS, OS, DIMS>
 where
-  DS: AsRef<[<DS as Storage>::Item]> + Push<Input = <DS as Storage>::Item> + Storage,
+  DS: AsRef<[DATA]> + Push<Input = DATA> + Storage<Item = DATA>,
   IS: AsRef<[usize]> + Push<Input = usize>,
   OS: AsRef<[usize]> + Push<Input = usize>,
 {
@@ -483,13 +481,9 @@ where
 }
 
 #[cfg(feature = "with_rand")]
-impl<DS, IS, OS, const DIMS: usize> Csl<DS, IS, OS, DIMS>
+impl<DATA, DS, IS, OS, const DIMS: usize> Csl<DS, IS, OS, DIMS>
 where
-  DS: AsMut<[<DS as Storage>::Item]>
-    + AsRef<[<DS as Storage>::Item]>
-    + Default
-    + Push<Input = <DS as Storage>::Item>
-    + Storage,
+  DS: AsMut<[DATA]> + AsRef<[DATA]> + Default + Push<Input = DATA> + Storage<Item = DATA>,
   IS: AsMut<[usize]> + AsRef<[usize]> + Default + Push<Input = usize>,
   OS: AsMut<[usize]> + AsRef<[usize]> + Default + Push<Input = usize>,
 {
@@ -513,7 +507,7 @@ where
   /// ```
   pub fn new_random_with_rand<F, ID, R>(into_dims: ID, nnz: usize, rng: &mut R, cb: F) -> Self
   where
-    F: FnMut(&mut R, [usize; DIMS]) -> <DS as Storage>::Item,
+    F: FnMut(&mut R, [usize; DIMS]) -> DATA,
     ID: Into<ArrayWrapper<usize, DIMS>>,
     R: rand::Rng,
   {
@@ -549,9 +543,9 @@ where
   }
 }
 
-impl<DS, IS, OS, const DIMS: usize> Csl<DS, IS, OS, DIMS>
+impl<DATA, DS, IS, OS, const DIMS: usize> Csl<DS, IS, OS, DIMS>
 where
-  DS: AsMut<[<DS as Storage>::Item]> + AsRef<[<DS as Storage>::Item]> + Storage,
+  DS: AsMut<[DATA]> + AsRef<[DATA]> + Storage<Item = DATA>,
   IS: AsRef<[usize]>,
   OS: AsRef<[usize]>,
 {
