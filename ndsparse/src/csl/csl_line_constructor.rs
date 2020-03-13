@@ -9,9 +9,9 @@ pub struct CslLineConstructor<'a, DS, IS, PS, const DIMS: usize> {
   curr_dim: usize,
 }
 
-impl<'a, DS, IS, PS, const DIMS: usize> CslLineConstructor<'a, DS, IS, PS, DIMS>
+impl<'a, DATA, DS, IS, PS, const DIMS: usize> CslLineConstructor<'a, DS, IS, PS, DIMS>
 where
-  DS: AsRef<[<DS as Storage>::Item]> + Push<Input = <DS as Storage>::Item> + Storage,
+  DS: AsRef<[DATA]> + Push<Input = DATA> + Storage<Item = DATA>,
   IS: AsRef<[usize]> + Push<Input = usize>,
   PS: AsRef<[usize]> + Push<Input = usize>,
 {
@@ -101,9 +101,9 @@ where
   /// # Assertions
   ///
   /// Uses a subset of the assertions of the [`Csl::new`] method.
-  pub fn push_line(self, data: &[DS::Item], indcs: &[usize]) -> Self
+  pub fn push_line(self, data: &[DATA], indcs: &[usize]) -> Self
   where
-    DS::Item: Clone,
+    DATA: Clone,
   {
     let curr_dim_rev = self.csl.dims.len() - self.curr_dim;
     self.csl.dims[self.curr_dim] = match curr_dim_rev {
