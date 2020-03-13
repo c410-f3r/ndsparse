@@ -6,44 +6,41 @@ use coo_utils::*;
 
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
-use cl_traits::ArrayWrapper;
-use core::marker::PhantomData;
+use cl_traits::{ArrayWrapper, Storage};
 
 /// COO backed by a static array.
 pub type CooArray<DATA, const DIMS: usize, const NNZ: usize> =
-  Coo<DATA, ArrayWrapper<(ArrayWrapper<usize, DIMS>, DATA), NNZ>, DIMS>;
+  Coo<ArrayWrapper<(ArrayWrapper<usize, DIMS>, DATA), NNZ>, DIMS>;
 #[cfg(feature = "with_arrayvec")]
 /// COO backed by the `ArrayVec` dependency.
 pub type CooArrayVec<DATA, const DIMS: usize, const NNZ: usize> =
-  Coo<DATA, cl_traits::ArrayVecArrayWrapper<(ArrayWrapper<usize, DIMS>, DATA), NNZ>, DIMS>;
+  Coo<cl_traits::ArrayVecArrayWrapper<(ArrayWrapper<usize, DIMS>, DATA), NNZ>, DIMS>;
 /// Mutable COO reference.
 pub type CooMut<'a, DATA, const DIMS: usize> =
-  Coo<DATA, &'a mut [(ArrayWrapper<usize, DIMS>, DATA)], DIMS>;
+  Coo<&'a mut [(ArrayWrapper<usize, DIMS>, DATA)], DIMS>;
 /// Immutable COO reference.
-pub type CooRef<'a, DATA, const DIMS: usize> =
-  Coo<DATA, &'a [(ArrayWrapper<usize, DIMS>, DATA)], DIMS>;
+pub type CooRef<'a, DATA, const DIMS: usize> = Coo<&'a [(ArrayWrapper<usize, DIMS>, DATA)], DIMS>;
 #[cfg(feature = "with_smallvec")]
 /// COO backed by the `SmallVec` dependency.
 pub type CooSmallVec<DATA, const DIMS: usize, const NNZ: usize> =
-  Coo<DATA, cl_traits::SmallVecArrayWrapper<(ArrayWrapper<usize, DIMS>, DATA), NNZ>, DIMS>;
+  Coo<cl_traits::SmallVecArrayWrapper<(ArrayWrapper<usize, DIMS>, DATA), NNZ>, DIMS>;
 #[cfg(feature = "with_staticvec")]
 /// COO backed by the `StaticVec` dependency
 pub type CooStaticVec<DATA, const DIMS: usize, const NNZ: usize> =
-  Coo<DATA, staticvec::StaticVec<(ArrayWrapper<usize, DIMS>, DATA), NNZ>, DIMS>;
+  Coo<staticvec::StaticVec<(ArrayWrapper<usize, DIMS>, DATA), NNZ>, DIMS>;
 #[cfg(feature = "alloc")]
 /// COO backed by a dynamic vector.
-pub type CooVec<DATA, const DIMS: usize> = Coo<DATA, Vec<(ArrayWrapper<usize, DIMS>, DATA)>, DIMS>;
+pub type CooVec<DATA, const DIMS: usize> = Coo<Vec<(ArrayWrapper<usize, DIMS>, DATA)>, DIMS>;
 
 /// Base structure for all COO* variants.
 #[cfg_attr(feature = "with_serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct Coo<DATA, DS, const DIMS: usize> {
+pub struct Coo<DS, const DIMS: usize> {
   pub(crate) data: DS,
   pub(crate) dims: ArrayWrapper<usize, DIMS>,
-  pub(crate) phantom: PhantomData<DATA>,
 }
 
-impl<DATA, DS, const DIMS: usize> Coo<DATA, DS, DIMS> {
+impl<DS, const DIMS: usize> Coo<DS, DIMS> {
   /// The definitions of all dimensions.
   ///
   /// # Example
@@ -58,9 +55,9 @@ impl<DATA, DS, const DIMS: usize> Coo<DATA, DS, DIMS> {
   }
 }
 
-impl<DATA, DS, const DIMS: usize> Coo<DATA, DS, DIMS>
+impl<DATA, DS, const DIMS: usize> Coo<DS, DIMS>
 where
-  DS: AsRef<[(ArrayWrapper<usize, DIMS>, DATA)]>,
+  DS: AsRef<[<DS as Storage>::Item]> + Storage<Item = (ArrayWrapper<usize, DIMS>, DATA)>,
 {
   /// Creates a valid COO instance.
   ///
@@ -77,7 +74,7 @@ where
   ///   ArrayWrapper,
   /// };
   /// // A sparse array ([8, _, _, _, _, 9, _, _, _, _])
-  /// let mut _sparse_array: Coo<f64, [(ArrayWrapper<usize, 1>, f64); 2], 1>;
+  /// let mut _sparse_array: Coo<[(ArrayWrapper<usize, 1>, f64); 2], 1>;
   /// _sparse_array = Coo::new([10], [([0].into(), 8.0), ([5].into(), 9.0)]);
   /// // A bunch of nothing for your overflow needs
   /// let mut _over_nine: CooVec<(), 9001>;
@@ -125,7 +122,7 @@ where
       does_not_have_duplicates_sorted(data.as_ref(), |a, b| a.0[..] != b.0[..]),
       "Must not have duplicated indices"
     );
-    Self { data, dims, phantom: PhantomData }
+    Self { data, dims }
   }
 
   /// The data that is being stored.
@@ -159,9 +156,9 @@ where
   }
 }
 
-impl<DATA, DS, const DIMS: usize> Coo<DATA, DS, DIMS>
+impl<DATA, DS, const DIMS: usize> Coo<DS, DIMS>
 where
-  DS: AsMut<[(ArrayWrapper<usize, DIMS>, DATA)]>,
+  DS: AsMut<[<DS as Storage>::Item]> + Storage<Item = (ArrayWrapper<usize, DIMS>, DATA)>,
 {
   /// Mutable version of [`data`](#method.data).
   ///
@@ -179,12 +176,13 @@ where
 }
 
 #[cfg(feature = "with_rand")]
-impl<DATA, DS, const DIMS: usize> Coo<DATA, DS, DIMS>
+impl<DATA, DS, const DIMS: usize> Coo<DS, DIMS>
 where
-  DS: AsMut<[(ArrayWrapper<usize, DIMS>, DATA)]>
-    + AsRef<[(ArrayWrapper<usize, DIMS>, DATA)]>
+  DS: AsMut<[<DS as Storage>::Item]>
+    + AsRef<[<DS as Storage>::Item]>
     + Default
-    + cl_traits::Push<Input = (ArrayWrapper<usize, DIMS>, DATA)>,
+    + Storage<Item = (ArrayWrapper<usize, DIMS>, DATA)>
+    + cl_traits::Push<Input = <DS as Storage>::Item>,
 {
   /// Creates a new random and valid instance delimited by the passed arguments.
   ///
@@ -228,15 +226,16 @@ where
 }
 
 #[cfg(all(test, feature = "with_rand"))]
-impl<DATA, DS, const DIMS: usize> quickcheck::Arbitrary for Coo<DATA, DS, DIMS>
+impl<DATA, DS, const DIMS: usize> quickcheck::Arbitrary for Coo<DS, DIMS>
 where
   DATA: Default + quickcheck::Arbitrary,
-  DS: AsRef<[(ArrayWrapper<usize, DIMS>, DATA)]>
-    + AsMut<[(ArrayWrapper<usize, DIMS>, DATA)]>
+  DS: AsRef<[<DS as Storage>::Item]>
+    + AsMut<[<DS as Storage>::Item]>
     + Clone
     + Default
     + Send
-    + cl_traits::Push<Input = (ArrayWrapper<usize, DIMS>, DATA)>
+    + Storage<Item = (ArrayWrapper<usize, DIMS>, DATA)>
+    + cl_traits::Push<Input = <DS as Storage>::Item>
     + 'static,
   rand::distributions::Standard: rand::distributions::Distribution<DATA>,
 {

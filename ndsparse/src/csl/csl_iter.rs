@@ -1,9 +1,6 @@
 use crate::csl::{outermost_offs, CslMut, CslRef};
 use cl_traits::ArrayWrapper;
-use core::{
-  marker::PhantomData,
-  slice::{from_raw_parts, from_raw_parts_mut},
-};
+use core::slice::{from_raw_parts, from_raw_parts_mut};
 
 macro_rules! impl_iter {
   ($csl_iter:ident, $data_ptr:ty, $data_type:ty, $from_raw_parts:ident, $ref:ident) => {
@@ -72,7 +69,6 @@ macro_rules! impl_iter {
           dims: self.dims,
           indcs: &self.indcs[values],
           offs: &self.offs[indcs],
-          phantom: PhantomData,
         })
       }
     }
@@ -94,7 +90,6 @@ macro_rules! impl_iter {
           dims: self.dims,
           indcs: &self.indcs[values],
           offs: &self.offs[indcs],
-          phantom: PhantomData,
         })
       }
 

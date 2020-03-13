@@ -1,21 +1,21 @@
 use crate::{csl::Csl, utils::*};
-use cl_traits::Push;
+use cl_traits::{Push, Storage};
 
 /// Constructs valid lines in a easy and interactive manner, abstracting away the complexity
 /// of the compressed sparse format.
 #[derive(Debug, PartialEq)]
-pub struct CslLineConstructor<'a, DATA, DS, IS, PS, const DIMS: usize> {
-  csl: &'a mut Csl<DATA, DS, IS, PS, DIMS>,
+pub struct CslLineConstructor<'a, DS, IS, PS, const DIMS: usize> {
+  csl: &'a mut Csl<DS, IS, PS, DIMS>,
   curr_dim: usize,
 }
 
-impl<'a, DATA, DS, IS, PS, const DIMS: usize> CslLineConstructor<'a, DATA, DS, IS, PS, DIMS>
+impl<'a, DS, IS, PS, const DIMS: usize> CslLineConstructor<'a, DS, IS, PS, DIMS>
 where
-  DS: AsRef<[DATA]> + Push<Input = DATA>,
+  DS: AsRef<[<DS as Storage>::Item]> + Push<Input = <DS as Storage>::Item> + Storage,
   IS: AsRef<[usize]> + Push<Input = usize>,
   PS: AsRef<[usize]> + Push<Input = usize>,
 {
-  pub(crate) fn new(csl: &'a mut Csl<DATA, DS, IS, PS, DIMS>) -> Self {
+  pub(crate) fn new(csl: &'a mut Csl<DS, IS, PS, DIMS>) -> Self {
     let curr_dim = if let Some(idx) = csl.dims.iter().copied().position(|x| x != 0) {
       idx
     } else {
@@ -101,9 +101,9 @@ where
   /// # Assertions
   ///
   /// Uses a subset of the assertions of the [`Csl::new`] method.
-  pub fn push_line(self, data: &[DATA], indcs: &[usize]) -> Self
+  pub fn push_line(self, data: &[DS::Item], indcs: &[usize]) -> Self
   where
-    DATA: Clone,
+    DS::Item: Clone,
   {
     let curr_dim_rev = self.csl.dims.len() - self.curr_dim;
     self.csl.dims[self.curr_dim] = match curr_dim_rev {
