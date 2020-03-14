@@ -20,7 +20,7 @@ mod csl_rnd;
 use crate::utils::{are_in_ascending_order, are_in_upper_bound, does_not_have_duplicates};
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
-use cl_traits::{ArrayWrapper, Clear, Push, Storage, Truncate};
+use cl_traits::{ArrayWrapper, Clear, Push, Storage, Truncate, WithCapacity};
 use core::ops::Range;
 pub use csl_iter::*;
 pub use csl_line_constructor::*;
@@ -73,7 +73,7 @@ pub type CslVec<DATA, const DIMS: usize> = Csl<Vec<DATA>, Vec<usize>, Vec<usize>
 /// * `DS`: Data Storage
 /// * `IS`: Indices Storage
 /// * `OS`: Offsets Storage
-/// * ` const DIMS: usize`: Dimensions length
+/// * `const DIMS: usize`: Dimensions length
 #[cfg_attr(feature = "with_serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Csl<DS, IS, OS, const DIMS: usize> {
@@ -81,6 +81,41 @@ pub struct Csl<DS, IS, OS, const DIMS: usize> {
   pub(crate) dims: ArrayWrapper<usize, DIMS>,
   pub(crate) indcs: IS,
   pub(crate) offs: OS,
+}
+
+impl<DS, IS, OS, const DIMS: usize> Csl<DS, IS, OS, DIMS>
+where
+  DS: WithCapacity<Input = usize>,
+  IS: WithCapacity<Input = usize>,
+  OS: WithCapacity<Input = usize>,
+{
+  /// Creates an empty instance with initial capacity.
+  ///
+  /// For storages involving solely arrays, all arguments will be discarted.
+  ///
+  /// # Arguments
+  ///
+  /// * `nnz`: Number of Non-Zero elements
+  /// * `nolp1`: Number Of Lines Plus 1, i.e., the dimensions product
+  /// (without the innermost dimension) plus 1
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// use ndsparse::csl::CslVec;
+  /// let dims = [11, 10, 01];
+  /// let nolp1 = dims.iter().rev().skip(1).product::<usize>() + 1;
+  /// let nnz = 2;
+  /// let _ = CslVec::<i32, 3>::with_capacity(nnz, nolp1);
+  /// ```
+  pub fn with_capacity(nnz: usize, nol: usize) -> Self {
+    Self {
+      data: DS::with_capacity(nnz),
+      dims: Default::default(),
+      indcs: IS::with_capacity(nnz),
+      offs: OS::with_capacity(nol),
+    }
+  }
 }
 
 impl<DS, IS, OS, const DIMS: usize> Csl<DS, IS, OS, DIMS> {

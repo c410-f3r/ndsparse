@@ -33,6 +33,11 @@ pub type CooStaticVec<DATA, const DIMS: usize, const NNZ: usize> =
 pub type CooVec<DATA, const DIMS: usize> = Coo<Vec<(ArrayWrapper<usize, DIMS>, DATA)>, DIMS>;
 
 /// Base structure for all COO* variants.
+///
+/// # Types
+///
+/// * `DS`: Data Storage
+/// * `const DIMS: usize`: Dimensions length
 #[cfg_attr(feature = "with_serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Coo<DS, const DIMS: usize> {
