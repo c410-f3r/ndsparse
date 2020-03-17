@@ -3,7 +3,7 @@ cl-traits = { features = ["const_generics"], version = "0.6" }
 rand = { default-features = false, optional = true, version = "0.7" }
 rayon = { default-features = false, optional = true, version = "1.0" }
 serde = { default-features = false, features = ["derive"], optional = true, version = "1.0" }
-staticvec = { default-features = false, optional = true, version = "0.8" }
+staticvec = { default-features = false, optional = true, version = "0.9" }
 
 [dev-dependencies]
 once_cell = "1.3"
@@ -30,7 +30,7 @@ license = "Apache-2.0"
 name = "ndsparse"
 readme = "README.md"
 repository = "https://github.com/c410-f3r/ndsparse/"
-version = "0.3.0"
+version = "0.3.1"
 
 [package.metadata.docs.rs]
 all-features = true
