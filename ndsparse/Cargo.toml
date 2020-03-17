@@ -6,7 +6,6 @@ serde = { default-features = false, features = ["derive"], optional = true, vers
 staticvec = { default-features = false, optional = true, version = "0.9" }
 
 [dev-dependencies]
-once_cell = "1.3"
 quickcheck = "0.9"
 quickcheck_macros = "0.9"
 
