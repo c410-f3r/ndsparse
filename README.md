@@ -8,7 +8,7 @@
 
 Structures to store and retrieve N-dimensional sparse data. Well, not any `N ∈ ℕ` but any natural number that fits into the pointer size of the machine that you are using. E.g., an 8-bit microcontroller can manipulate any sparse structure with up to 255 dimensions.
 
-For those that might be wondering about why this crate should be used, it generally comes down to space-efficiency, ergometrics and retrieving speed. The following snippet shows some potential use-cases for replacement with `_cube_of_vecs` being the worst and most inefficient of all.
+For those that might be wondering about why this crate should be used, it generally comes down to space-efficiency, ergometrics and retrieving speed. The following snippet shows some use-cases for potential replacement with `_cube_of_vecs` being the most inefficient of all.
 
 ```rust
 let _vec_of_options: Vec<Option<i32>> = Default::default();
