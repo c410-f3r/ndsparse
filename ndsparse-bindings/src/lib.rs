@@ -4,9 +4,6 @@
 //! The array support of these third-parties dependencies is minimum to non-existent, threfore,
 //! the overhead of heap allocating.
 
-#![allow(incomplete_features)]
-#![feature(const_generics)]
-
 use ndsparse::csl::Csl;
 #[cfg(feature = "with_pyo3")]
 use pyo3::prelude::*;
@@ -26,7 +23,7 @@ macro_rules! create_csl {
     #[cfg_attr(feature = "with_wasm_bindgen", wasm_bindgen)]
     #[derive(Debug)]
     pub struct $struct_name {
-      csl: Csl<$data_storage, $indcs_storage, $offs_storage, $dims>,
+      csl: Csl<[usize; $dims], $data_storage, $indcs_storage, $offs_storage>,
     }
 
     // Generic
@@ -91,7 +88,7 @@ macro_rules! create_csl {
         indcs: $indcs_storage,
         offs: $offs_storage,
       ) -> Self {
-        let dims = from_vec_to_array(dims_vec);
+        let dims: [usize; $dims] = from_vec_to_array(dims_vec);
         Self { csl: ndsparse::csl::Csl::new(dims, data, indcs, offs) }
       }
 
@@ -129,12 +126,11 @@ create_csl!(Csl6VecF64, f64, Vec<f64>, Vec<usize>, Vec<usize>, 6);
 create_csl!(Csl7VecF64, f64, Vec<f64>, Vec<usize>, Vec<usize>, 7);
 
 #[cfg(feature = "with_wasm_bindgen")]
-fn from_vec_to_array<T, const N: usize>(vec: Vec<T>) -> [T; N]
+fn from_vec_to_array<A>(vec: Vec<A::Item>) -> A
 where
-  T: Default,
+  A: cl_traits::Array,
 {
-  assert!(vec.len() >= N);
-  let mut array = ndsparse::ArrayWrapper::default();
-  vec.into_iter().enumerate().for_each(|(idx, elem)| array[idx] = elem);
-  array.into()
+  assert!(vec.len() >= A::CAPACITY);
+  let mut iter = vec.into_iter();
+  cl_traits::create_array(|_| iter.next().unwrap())
 }

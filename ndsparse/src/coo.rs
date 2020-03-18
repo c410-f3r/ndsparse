@@ -2,35 +2,31 @@
 
 mod coo_utils;
 
-use coo_utils::*;
-
+use crate::Dims;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use cl_traits::{ArrayWrapper, Storage};
+use coo_utils::*;
 
 /// COO backed by a static array.
-pub type CooArray<DATA, const DIMS: usize, const NNZ: usize> =
-  Coo<ArrayWrapper<(ArrayWrapper<usize, DIMS>, DATA), NNZ>, DIMS>;
+pub type CooArray<DA, DTA> = Coo<DA, ArrayWrapper<DTA>>;
 #[cfg(feature = "with_arrayvec")]
 /// COO backed by the `ArrayVec` dependency.
-pub type CooArrayVec<DATA, const DIMS: usize, const NNZ: usize> =
-  Coo<cl_traits::ArrayVecArrayWrapper<(ArrayWrapper<usize, DIMS>, DATA), NNZ>, DIMS>;
+pub type CooArrayVec<DA, DTA> = Coo<DA, cl_traits::ArrayVecArrayWrapper<DTA>>;
 /// Mutable COO reference.
-pub type CooMut<'a, DATA, const DIMS: usize> =
-  Coo<&'a mut [(ArrayWrapper<usize, DIMS>, DATA)], DIMS>;
+pub type CooMut<'a, DA, DATA> = Coo<DA, &'a mut [(ArrayWrapper<DA>, DATA)]>;
 /// Immutable COO reference.
-pub type CooRef<'a, DATA, const DIMS: usize> = Coo<&'a [(ArrayWrapper<usize, DIMS>, DATA)], DIMS>;
+pub type CooRef<'a, DA, DATA> = Coo<DA, &'a [(ArrayWrapper<DA>, DATA)]>;
 #[cfg(feature = "with_smallvec")]
 /// COO backed by the `SmallVec` dependency.
-pub type CooSmallVec<DATA, const DIMS: usize, const NNZ: usize> =
-  Coo<cl_traits::SmallVecArrayWrapper<(ArrayWrapper<usize, DIMS>, DATA), NNZ>, DIMS>;
+pub type CooSmallVec<DA, DTA> = Coo<DA, cl_traits::SmallVecArrayWrapper<DTA>>;
 #[cfg(feature = "with_staticvec")]
 /// COO backed by the `StaticVec` dependency
 pub type CooStaticVec<DATA, const DIMS: usize, const NNZ: usize> =
-  Coo<staticvec::StaticVec<(ArrayWrapper<usize, DIMS>, DATA), NNZ>, DIMS>;
+  Coo<[usize; DIMS], staticvec::StaticVec<(ArrayWrapper<[usize; DIMS]>, DATA), NNZ>>;
 #[cfg(feature = "alloc")]
 /// COO backed by a dynamic vector.
-pub type CooVec<DATA, const DIMS: usize> = Coo<Vec<(ArrayWrapper<usize, DIMS>, DATA)>, DIMS>;
+pub type CooVec<DA, DATA> = Coo<DA, Vec<(ArrayWrapper<DA>, DATA)>>;
 
 /// Base structure for all COO* variants.
 ///
@@ -40,12 +36,18 @@ pub type CooVec<DATA, const DIMS: usize> = Coo<Vec<(ArrayWrapper<usize, DIMS>, D
 /// * `const DIMS: usize`: Dimensions length
 #[cfg_attr(feature = "with_serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct Coo<DS, const DIMS: usize> {
+pub struct Coo<DA, DS>
+where
+  DA: Dims,
+{
   pub(crate) data: DS,
-  pub(crate) dims: ArrayWrapper<usize, DIMS>,
+  pub(crate) dims: ArrayWrapper<DA>,
 }
 
-impl<DS, const DIMS: usize> Coo<DS, DIMS> {
+impl<DA, DS> Coo<DA, DS>
+where
+  DA: Dims,
+{
   /// The definitions of all dimensions.
   ///
   /// # Example
@@ -55,14 +57,15 @@ impl<DS, const DIMS: usize> Coo<DS, DIMS> {
   /// assert_eq!(coo_array_5().dims(), &[2, 3, 4, 3, 3]);
   /// ```
   #[inline]
-  pub fn dims(&self) -> &[usize; DIMS] {
+  pub fn dims(&self) -> &DA {
     &*self.dims
   }
 }
 
-impl<DATA, DS, const DIMS: usize> Coo<DS, DIMS>
+impl<DA, DATA, DS> Coo<DA, DS>
 where
-  DS: AsRef<[<DS as Storage>::Item]> + Storage<Item = (ArrayWrapper<usize, DIMS>, DATA)>,
+  DA: Dims,
+  DS: AsRef<[<DS as Storage>::Item]> + Storage<Item = (ArrayWrapper<DA>, DATA)>,
 {
   /// Creates a valid COO instance.
   ///
@@ -74,16 +77,12 @@ where
   /// # Example
   ///
   /// ```rust
-  /// use ndsparse::{
-  ///   coo::{Coo, CooVec},
-  ///   ArrayWrapper,
-  /// };
-  /// // A sparse array ([8, _, _, _, _, 9, _, _, _, _])
-  /// let mut _sparse_array: Coo<[(ArrayWrapper<usize, 1>, f64); 2], 1>;
-  /// _sparse_array = Coo::new([10], [([0].into(), 8.0), ([5].into(), 9.0)]);
+  /// use ndsparse::coo::{CooArray, CooVec};
+  /// // Sparse array ([8, _, _, _, _, 9, _, _, _, _])
+  /// let mut _sparse_array = CooArray::new([10], [([0].into(), 8.0), ([5].into(), 9.0)]);
   /// // A bunch of nothing for your overflow needs
-  /// let mut _over_nine: CooVec<(), 9001>;
-  /// _over_nine = CooVec::new(ArrayWrapper::default(), vec![]);
+  /// let mut _over_nine: CooVec<[usize; 9001], ()>;
+  /// _over_nine = CooVec::new([0; 9001], vec![]);
   /// ```
   ///
   /// # Assertions
@@ -107,7 +106,7 @@ where
   /// ```
   pub fn new<ID, IDS>(into_dims: ID, into_data: IDS) -> Self
   where
-    ID: Into<ArrayWrapper<usize, DIMS>>,
+    ID: Into<ArrayWrapper<DA>>,
     IDS: Into<DS>,
   {
     let data = into_data.into();
@@ -117,10 +116,9 @@ where
       "Data indices must be in asceding order"
     );
     assert!(
-      data
-        .as_ref()
-        .iter()
-        .all(|(indcs, _)| { indcs.iter().zip(dims.iter()).all(|(data_idx, dim)| data_idx < dim) }),
+      data.as_ref().iter().all(|(indcs, _)| {
+        indcs.slice().iter().zip(dims.slice().iter()).all(|(data_idx, dim)| data_idx < dim)
+      }),
       "All indices must be lesser than the defined dimensions"
     );
     assert!(
@@ -138,7 +136,7 @@ where
   /// use ndsparse::doc_tests::coo_array_5;
   /// assert_eq!(coo_array_5().data().get(0), Some(&([0, 0, 1, 1, 2].into(), 1)));
   /// ```
-  pub fn data(&self) -> &[(ArrayWrapper<usize, DIMS>, DATA)] {
+  pub fn data(&self) -> &[(ArrayWrapper<DA>, DATA)] {
     self.data.as_ref()
   }
 
@@ -156,37 +154,39 @@ where
   /// assert_eq!(coo.value([0, 0, 0, 0, 0]), None);
   /// assert_eq!(coo.value([0, 2, 2, 0, 1]), Some(&4));
   /// ```
-  pub fn value(&self, indcs: [usize; DIMS]) -> Option<&DATA> {
+  pub fn value(&self, indcs: DA) -> Option<&DATA> {
     value(indcs.into(), &self.data.as_ref())
   }
 }
 
-impl<DATA, DS, const DIMS: usize> Coo<DS, DIMS>
+impl<DA, DATA, DS> Coo<DA, DS>
 where
-  DS: AsMut<[<DS as Storage>::Item]> + Storage<Item = (ArrayWrapper<usize, DIMS>, DATA)>,
+  DA: Dims,
+  DS: AsMut<[<DS as Storage>::Item]> + Storage<Item = (ArrayWrapper<DA>, DATA)>,
 {
   /// Mutable version of [`data`](#method.data).
   ///
   /// # Safety
   ///
   /// Indices can be modified to overflow its dimensions.
-  pub unsafe fn data_mut(&mut self) -> &[(ArrayWrapper<usize, DIMS>, DATA)] {
+  pub unsafe fn data_mut(&mut self) -> &[(ArrayWrapper<DA>, DATA)] {
     self.data.as_mut()
   }
 
   /// Mutable version of [`value`](#method.value).
-  pub fn value_mut(&mut self, indcs: [usize; DIMS]) -> Option<&mut DATA> {
+  pub fn value_mut(&mut self, indcs: DA) -> Option<&mut DATA> {
     value_mut(indcs.into(), self.data.as_mut())
   }
 }
 
 #[cfg(feature = "with_rand")]
-impl<DATA, DS, const DIMS: usize> Coo<DS, DIMS>
+impl<DA, DATA, DS> Coo<DA, DS>
 where
+  DA: Dims,
   DS: AsMut<[<DS as Storage>::Item]>
     + AsRef<[<DS as Storage>::Item]>
     + Default
-    + Storage<Item = (ArrayWrapper<usize, DIMS>, DATA)>
+    + Storage<Item = (ArrayWrapper<DA>, DATA)>
     + cl_traits::Push<Input = <DS as Storage>::Item>,
 {
   /// Creates a new random and valid instance delimited by the passed arguments.
@@ -203,14 +203,14 @@ where
   /// ```rust
   /// use ndsparse::coo::CooVec;
   /// use rand::{thread_rng, Rng};
-  /// let mut _random: CooVec<u8, 8>;
+  /// let mut _random: CooVec<[usize; 8], u8>;
   /// let mut rng = thread_rng();
   /// _random = CooVec::new_random_with_rand([1, 2, 3, 4, 5, 6, 7, 8], 9, &mut rng, |r, _| r.gen());
   /// ```
   pub fn new_random_with_rand<F, ID, R>(into_dims: ID, nnz: usize, rng: &mut R, mut cb: F) -> Self
   where
-    F: FnMut(&mut R, &[usize; DIMS]) -> DATA,
-    ID: Into<ArrayWrapper<usize, DIMS>>,
+    F: FnMut(&mut R, &DA) -> DATA,
+    ID: Into<ArrayWrapper<DA>>,
     R: rand::Rng,
   {
     use rand::distributions::Distribution;
@@ -218,7 +218,7 @@ where
     let mut data: DS = Default::default();
     for _ in 0..nnz {
       data.push({
-        let indcs: [usize; DIMS] = cl_traits::create_array(|idx| {
+        let indcs: DA = cl_traits::create_array(|idx| {
           rand::distributions::Uniform::from(0..dims[idx]).sample(rng)
         });
         let element = cb(rng, &indcs);
@@ -231,15 +231,16 @@ where
 }
 
 #[cfg(all(test, feature = "with_rand"))]
-impl<DATA, DS, const DIMS: usize> quickcheck::Arbitrary for Coo<DS, DIMS>
+impl<DA, DATA, DS> quickcheck::Arbitrary for Coo<DA, DS>
 where
+  DA: Dims + Clone + Send + 'static,
   DATA: Default + quickcheck::Arbitrary,
   DS: AsRef<[<DS as Storage>::Item]>
     + AsMut<[<DS as Storage>::Item]>
     + Clone
     + Default
     + Send
-    + Storage<Item = (ArrayWrapper<usize, DIMS>, DATA)>
+    + Storage<Item = (ArrayWrapper<DA>, DATA)>
     + cl_traits::Push<Input = <DS as Storage>::Item>
     + 'static,
   rand::distributions::Standard: rand::distributions::Distribution<DATA>,
@@ -250,8 +251,8 @@ where
     G: quickcheck::Gen,
   {
     use rand::Rng;
-    let dims = cl_traits::create_array(|_| g.gen_range(0, g.size()));
-    let nnz = g.gen_range(0, dims.iter().product::<usize>());
+    let dims: DA = cl_traits::create_array(|_| g.gen_range(0, g.size()));
+    let nnz = g.gen_range(0, dims.slice().iter().product::<usize>());
     Self::new_random_with_rand(dims, nnz, g, |g, _| g.gen())
   }
 }

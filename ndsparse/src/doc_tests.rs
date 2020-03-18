@@ -3,6 +3,9 @@
 use crate::{coo::CooArray, csl::CslArray};
 #[cfg(feature = "alloc")]
 use crate::{coo::CooVec, csl::CslVec};
+use cl_traits::ArrayWrapper;
+
+type CooArray5 = CooArray<[usize; 5], [(ArrayWrapper<[usize; 5]>, i32); 7]>;
 
 /// As odd as it may seem, this illustration is just a guide to get a grasp of
 /// a 5D structure.
@@ -47,7 +50,7 @@ use crate::{coo::CooVec, csl::CslVec};
 ///   ],
 /// );
 /// ```
-pub fn coo_array_5() -> CooArray<i32, 5, 7> {
+pub fn coo_array_5() -> CooArray5 {
   CooArray::new(
     [2, 3, 4, 3, 3],
     [
@@ -64,7 +67,7 @@ pub fn coo_array_5() -> CooArray<i32, 5, 7> {
 
 /// [`Vec`] version of [`coo_array_5`].
 #[cfg(feature = "alloc")]
-pub fn coo_vec_5() -> CooVec<i32, 5> {
+pub fn coo_vec_5() -> CooVec<[usize; 5], i32> {
   let coo = coo_array_5();
   CooVec::new(coo.dims, coo.data.to_vec())
 }
@@ -99,7 +102,7 @@ pub fn coo_vec_5() -> CooVec<i32, 5> {
 ///   [0, 2, 3, 3, 5, 6, 6, 6, 6, 7, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
 /// );
 /// ```
-pub fn csl_array_4() -> CslArray<i32, 4, 9, 25> {
+pub fn csl_array_4() -> CslArray<[usize; 4], [i32; 9], [usize; 9], [usize; 25]> {
   CslArray::new(
     [2, 3, 4, 5],
     [1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -110,7 +113,7 @@ pub fn csl_array_4() -> CslArray<i32, 4, 9, 25> {
 
 /// [`Vec`] version of [`csl_array_4`].
 #[cfg(feature = "alloc")]
-pub fn csl_vec_4() -> CslVec<i32, 4> {
+pub fn csl_vec_4() -> CslVec<[usize; 4], i32> {
   let csl = csl_array_4();
   CslVec::new(csl.dims, csl.data.to_vec(), csl.indcs.to_vec(), csl.offs.to_vec())
 }
