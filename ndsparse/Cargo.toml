@@ -1,5 +1,5 @@
 [dependencies]
-cl-traits = { features = ["const_generics"], version = "0.6" }
+cl-traits = "1.0"
 rand = { default-features = false, optional = true, version = "0.7" }
 rayon = { default-features = false, optional = true, version = "1.0" }
 serde = { default-features = false, features = ["derive"], optional = true, version = "1.0" }
@@ -11,13 +11,14 @@ quickcheck_macros = "0.9"
 
 [features]
 alloc = ["cl-traits/alloc", "rand/alloc", "serde/alloc"]
+const_generics = ["cl-traits/const_generics"]
 default = []
 with_arrayvec = ["cl-traits/with_arrayvec"]
 with_rand = ["rand"]
 with_rayon = ["rayon"]
 with_serde = ["cl-traits/with_serde", "serde"]
 with_smallvec = ["cl-traits/with_smallvec"]
-with_staticvec = ["cl-traits/with_staticvec", "staticvec"]
+with_staticvec = ["const_generics", "cl-traits/with_staticvec", "staticvec"]
 
 [package]
 authors = ["Caio Fernandes <c410.f3r@gmail.com>"]
@@ -29,7 +30,7 @@ license = "Apache-2.0"
 name = "ndsparse"
 readme = "README.md"
 repository = "https://github.com/c410-f3r/ndsparse/"
-version = "0.3.1"
+version = "0.4.0"
 
 [package.metadata.docs.rs]
 all-features = true

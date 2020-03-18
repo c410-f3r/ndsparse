@@ -1,8 +1,12 @@
-use crate::csl::{max_nnz, Csl, CslVec};
+use crate::{
+  csl::{max_nnz, Csl, CslVec},
+  Dims,
+};
 use cl_traits::{ArrayWrapper, Push, Storage};
 
-impl<DATA, DS, IS, OS, const DIMS: usize> quickcheck::Arbitrary for Csl<DS, IS, OS, DIMS>
+impl<DA, DATA, DS, IS, OS> quickcheck::Arbitrary for Csl<DA, DS, IS, OS>
 where
+  DA: Dims + Clone + Default + Send + 'static,
   DS: AsMut<[DATA]>
     + AsRef<[DATA]>
     + Clone
@@ -21,7 +25,7 @@ where
     G: quickcheck::Gen,
   {
     use rand::Rng;
-    let zero_cut_point = g.gen_range(0, DIMS + 1);
+    let zero_cut_point = g.gen_range(0, DA::CAPACITY + 1);
     let mut dims = ArrayWrapper::default();
     dims[zero_cut_point..]
       .iter_mut()
@@ -39,7 +43,7 @@ macro_rules! create_tests {
 
       #[cfg(feature = "with_rayon")]
       #[quickcheck_macros::quickcheck]
-      fn csl_outermost_rayon_iter(csl: CslVec<i32, $dim>) -> bool {
+      fn csl_outermost_rayon_iter(csl: CslVec<[usize; $dim], i32>) -> bool {
         use rayon::prelude::*;
         csl
           .outermost_rayon_iter()
@@ -48,7 +52,7 @@ macro_rules! create_tests {
       }
 
       #[quickcheck_macros::quickcheck]
-      fn csl_outermost_sub_dim(csl: CslVec<i32, $dim>) -> bool {
+      fn csl_outermost_sub_dim(csl: CslVec<[usize; $dim], i32>) -> bool {
         for (idx, csl_ref) in csl.outermost_iter().enumerate() {
           if csl_ref != csl.sub_dim(idx..idx + 1) {
             return false;
@@ -64,7 +68,7 @@ create_tests!(_2, 2, 1);
 create_tests!(_3, 3, 2);
 
 #[quickcheck_macros::quickcheck]
-fn csl_line(csl: CslVec<i32, 2>) -> bool {
+fn csl_line(csl: CslVec<[usize; 2], i32>) -> bool {
   for (idx, csl_ref) in csl.outermost_iter().enumerate() {
     if csl_ref.sub_dim(0..csl.dims[1]) != csl.line([idx, 0]).unwrap() {
       return false;
@@ -74,7 +78,7 @@ fn csl_line(csl: CslVec<i32, 2>) -> bool {
 }
 
 #[quickcheck_macros::quickcheck]
-fn csl_value(csl: CslVec<i32, 1>) -> bool {
+fn csl_value(csl: CslVec<[usize; 1], i32>) -> bool {
   for (idx, data) in csl.indcs().iter().copied().zip(csl.data()) {
     if Some(data) != csl.value([idx]) {
       return false;

@@ -1,4 +1,7 @@
-use crate::csl::{outermost_offs, CslMut, CslRef};
+use crate::{
+  csl::{outermost_offs, CslMut, CslRef},
+  Dims,
+};
 use cl_traits::ArrayWrapper;
 use core::slice::{from_raw_parts, from_raw_parts_mut};
 
@@ -6,26 +9,30 @@ macro_rules! impl_iter {
   ($csl_iter:ident, $data_ptr:ty, $data_type:ty, $from_raw_parts:ident, $ref:ident) => {
     /// Iterator of a CSL dimension.
     #[derive(Debug)]
-    pub struct $csl_iter<'a, T, const N: usize>
+    pub struct $csl_iter<'a, DA, T>
     where
+      DA: Dims,
       T: 'a,
     {
       curr_idx: usize,
       data: $data_ptr,
-      dims: ArrayWrapper<usize, N>,
+      dims: ArrayWrapper<DA>,
       indcs: &'a [usize],
       max_idx: usize,
       offs: &'a [usize],
     }
 
-    impl<'a, T, const N: usize> $csl_iter<'a, T, N> {
+    impl<'a, DA, T> $csl_iter<'a, DA, T>
+    where
+      DA: Dims,
+    {
       pub(crate) fn new(
-        orig_dims: &ArrayWrapper<usize, N>,
+        orig_dims: &ArrayWrapper<DA>,
         data: $data_ptr,
         indcs: &'a [usize],
         offs: &'a [usize],
       ) -> Self {
-        assert!(N > 1);
+        assert!(DA::CAPACITY > 1);
         let mut dims = *orig_dims;
         dims[0] = 1;
         let max_idx = orig_dims[0];
@@ -56,7 +63,10 @@ macro_rules! impl_iter {
       }
     }
 
-    impl<'a, T, const N: usize> DoubleEndedIterator for $csl_iter<'a, T, N> {
+    impl<'a, DA, T> DoubleEndedIterator for $csl_iter<'a, DA, T>
+    where
+      DA: Dims,
+    {
       fn next_back(&mut self) -> Option<Self::Item> {
         if self.curr_idx == 0 {
           return None;
@@ -73,10 +83,13 @@ macro_rules! impl_iter {
       }
     }
 
-    impl<'a, T, const N: usize> ExactSizeIterator for $csl_iter<'a, T, N> {}
+    impl<'a, DA, T> ExactSizeIterator for $csl_iter<'a, DA, T> where DA: Dims {}
 
-    impl<'a, T, const N: usize> Iterator for $csl_iter<'a, T, N> {
-      type Item = $ref<'a, T, N>;
+    impl<'a, DA, T> Iterator for $csl_iter<'a, DA, T>
+    where
+      DA: Dims,
+    {
+      type Item = $ref<'a, DA, T>;
 
       fn next(&mut self) -> Option<Self::Item> {
         if self.curr_idx >= self.max_idx {
@@ -98,8 +111,8 @@ macro_rules! impl_iter {
       }
     }
 
-    unsafe impl<'a, T, const N: usize> Send for $csl_iter<'a, T, N> {}
-    unsafe impl<'a, T, const N: usize> Sync for $csl_iter<'a, T, N> {}
+    unsafe impl<'a, DA, T> Send for $csl_iter<'a, DA, T> where DA: Dims {}
+    unsafe impl<'a, DA, T> Sync for $csl_iter<'a, DA, T> where DA: Dims {}
   };
 }
 

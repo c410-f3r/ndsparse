@@ -1,28 +1,32 @@
-use crate::{csl::Csl, utils::*};
+use crate::{csl::Csl, utils::*, Dims};
 use cl_traits::{Push, Storage};
 
 /// Constructs valid lines in a easy and interactive manner, abstracting away the complexity
 /// of the compressed sparse format.
 #[derive(Debug, PartialEq)]
-pub struct CslLineConstructor<'a, DS, IS, PS, const DIMS: usize> {
-  csl: &'a mut Csl<DS, IS, PS, DIMS>,
+pub struct CslLineConstructor<'a, DA, DS, IS, PS>
+where
+  DA: Dims,
+{
+  csl: &'a mut Csl<DA, DS, IS, PS>,
   curr_dim: usize,
 }
 
-impl<'a, DATA, DS, IS, PS, const DIMS: usize> CslLineConstructor<'a, DS, IS, PS, DIMS>
+impl<'a, DA, DATA, DS, IS, PS> CslLineConstructor<'a, DA, DS, IS, PS>
 where
+  DA: Dims,
   DS: AsRef<[DATA]> + Push<Input = DATA> + Storage<Item = DATA>,
   IS: AsRef<[usize]> + Push<Input = usize>,
   PS: AsRef<[usize]> + Push<Input = usize>,
 {
-  pub(crate) fn new(csl: &'a mut Csl<DS, IS, PS, DIMS>) -> Self {
-    let curr_dim = if let Some(idx) = csl.dims.iter().copied().position(|x| x != 0) {
+  pub(crate) fn new(csl: &'a mut Csl<DA, DS, IS, PS>) -> Self {
+    let curr_dim = if let Some(idx) = csl.dims.slice().iter().copied().position(|x| x != 0) {
       idx
     } else {
       if csl.offs.as_ref().get(0).is_none() {
         csl.offs.push(0);
       }
-      csl.dims.len()
+      csl.dims.slice().len()
     };
     Self { csl, curr_dim }
   }
@@ -33,7 +37,7 @@ where
   ///
   /// ```rust
   /// use ndsparse::csl::{CslRef, CslVec};
-  /// let mut csl = CslVec::<_, 3>::default();
+  /// let mut csl = CslVec::<[usize; 3], i32>::default();
   /// csl
   ///   .constructor()
   ///   .next_outermost_dim(3)
@@ -53,10 +57,10 @@ where
   /// * The next dimension must not exceed the defined number of dimensions.
   /// ```rust,should_panic
   /// use ndsparse::csl::CslVec;
-  /// let _ = CslVec::<i32, 0>::default().constructor().next_outermost_dim(2);
+  /// let _ = CslVec::<[usize; 0], i32>::default().constructor().next_outermost_dim(2);
   /// ```
   pub fn next_outermost_dim(mut self, len: usize) -> Self {
-    assert!(self.curr_dim != 0, "Maximum of {} dimensions", DIMS);
+    assert!(self.curr_dim != 0, "Maximum of {} dimensions", DA::CAPACITY);
     self.curr_dim -= 1;
     self.csl.dims[self.curr_dim] = len;
     self
@@ -68,7 +72,7 @@ where
   ///
   /// ```rust
   /// use ndsparse::csl::{CslRef, CslVec};
-  /// let mut csl = CslVec::<i32, 3>::default();
+  /// let mut csl = CslVec::<[usize; 3], i32>::default();
   /// let constructor = csl.constructor();
   /// constructor.next_outermost_dim(3).push_empty_line().next_outermost_dim(2).push_empty_line();
   /// assert_eq!(csl.line([0, 0, 0]), Some(CslRef::new([3], &[][..], &[][..], &[0, 0][..])));
@@ -92,7 +96,7 @@ where
   ///
   /// ```rust
   /// use ndsparse::csl::{CslRef, CslVec};
-  /// let mut csl = CslVec::<i32, 3>::default();
+  /// let mut csl = CslVec::<[usize; 3], i32>::default();
   /// csl.constructor().next_outermost_dim(50).push_line(&[1, 2], &[1, 40]);
   /// let line = csl.line([0, 0, 0]);
   /// assert_eq!(line, Some(CslRef::new([50], &[1, 2][..], &[1, 40][..], &[0, 2][..])));
@@ -105,14 +109,14 @@ where
   where
     DATA: Clone,
   {
-    let curr_dim_rev = self.csl.dims.len() - self.curr_dim;
+    let curr_dim_rev = self.csl.dims.slice().len() - self.curr_dim;
     self.csl.dims[self.curr_dim] = match curr_dim_rev {
       0 => self.csl.dims[self.curr_dim].max(*indcs.iter().max().unwrap()),
       1 => self.csl.dims[self.curr_dim].max(self.csl.offs.as_ref().len() - 1),
-      _ => self.csl.dims.iter().skip(1).take(curr_dim_rev).rev().skip(1).product::<usize>(),
+      _ => self.csl.dims.slice().iter().skip(1).take(curr_dim_rev).rev().skip(1).product::<usize>(),
     };
     let mut nnz = 0;
-    let last_dim = *self.csl.dims.last().unwrap();
+    let last_dim = *self.csl.dims.slice().last().unwrap();
     for (idx, value) in indcs.iter().copied().zip(data.iter().cloned()) {
       assert!(
         nnz < last_dim,

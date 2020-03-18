@@ -64,8 +64,5 @@ jobs:
           command: build
           args: --all-features
 
-      - name: Examples
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --example dynamic_arrays
+      - name: Test
+        run: ./scripts/tests.sh && ./scripts/tests-nightly.sh

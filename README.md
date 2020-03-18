@@ -4,7 +4,7 @@
 [![crates.io](https://img.shields.io/crates/v/ndsparse.svg)](https://crates.io/crates/ndsparse)
 [![Documentation](https://docs.rs/ndsparse/badge.svg)](https://docs.rs/ndsparse)
 [![License](https://img.shields.io/badge/license-APACHE2-blue.svg)](./LICENSE)
-[![Rustc](https://img.shields.io/badge/rustc-nightly-lightgray")](https://rustup.rs/)
+[![Rustc](https://img.shields.io/badge/rustc-1.42-lightgray")](https://blog.rust-lang.org/2020/03/12/Rust-1.42.html)
 
 Structures to store and retrieve N-dimensional sparse data. Well, not any `N ∈ ℕ` but any natural number that fits into the pointer size of the machine that you are using. E.g., an 8-bit microcontroller can manipulate any sparse structure with up to 255 dimensions.
 
@@ -58,6 +58,7 @@ fn main() {
 ## Optional features
 
 - `alloc`
+- Constant generics
 - Bindings (Py03, wasm-bindgen)
 - Deserialization/Serialization (serde)
 - Dynamic arrays (ArrayVec, SmallVec and StaticVec)
@@ -66,7 +67,7 @@ fn main() {
 
 ## Nightly compiler
 
-For truly N-dimension structures, constant generics are being used and this feature can only be accessible with a nightly Rustc compiler. 
+If dimensions or array storages with more than 32 elements are needed, then it is necessary to include the `const_generics` feature that is only available when using a nightly Rustc compiler.
 
 ## Future
 

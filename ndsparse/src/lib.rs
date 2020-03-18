@@ -1,4 +1,5 @@
-#![allow(incomplete_features)]
+#![cfg_attr(feature = "const_generics", allow(incomplete_features))]
+#![cfg_attr(feature = "const_generics", feature(const_generics))]
 #![cfg_attr(not(feature = "with_rayon"), no_std)]
 #![deny(rust_2018_idioms)]
 #![doc(test(attr(forbid(
@@ -8,7 +9,6 @@
   unused_attributes,
   dead_code
 ))))]
-#![feature(const_generics)]
 #![forbid(missing_debug_implementations, missing_docs)]
 
 //! # ndsparse
@@ -20,9 +20,11 @@ extern crate alloc;
 
 pub mod coo;
 pub mod csl;
+mod dims;
 pub mod doc_tests;
 mod utils;
 
 pub use cl_traits::ArrayWrapper;
+pub use dims::*;
 #[cfg(feature = "with_rayon")]
 pub use utils::{ParallelIteratorWrapper, ParallelProducerWrapper};
