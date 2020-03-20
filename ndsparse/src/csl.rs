@@ -122,7 +122,8 @@ where
   ///
   /// # Example
   ///
-  /// ```rust
+  #[cfg_attr(feature = "alloc", doc = "```rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
   /// use ndsparse::csl::CslVec;
   /// let dims = [11, 10, 1];
   /// let nolp1 = dims.iter().rev().skip(1).product::<usize>() + 1;
@@ -179,7 +180,8 @@ where
   ///
   /// # Example
   ///
-  /// ```rust
+  #[cfg_attr(all(feature = "alloc", feature = "const_generics"), doc = "```rust")]
+  #[cfg_attr(not(all(feature = "alloc", feature = "const_generics")), doc = "```ignore,rust")]
   /// use ndsparse::csl::{CslArray, CslVec};
   /// // Sparse array ([8, _, _, _, _, 9, _, _, _, _])
   /// let mut _sparse_array = CslArray::new([10], [8.0, 9.0], [0, 5], [0, 2]);
@@ -191,13 +193,15 @@ where
   /// # Assertions
   ///
   /// * Innermost dimensions length must be greater than zero
-  /// ```rust,should_panic
+  #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
   /// use ndsparse::csl::CslVec;
   /// let _: CslVec<[usize; 7], i32> = CslVec::new([1, 2, 3, 4, 5, 0, 7], vec![], vec![], vec![]);
   /// ```
   ///
   /// * The data length must equal the indices length
-  /// ```rust,should_panic
+  #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
   /// use ndsparse::csl::CslVec;
   /// let _ = CslVec::new([10], vec![8, 9], vec![0], vec![0, 2]);
   /// ```
@@ -209,7 +213,8 @@ where
   /// ```
   ///
   /// * Offsets length must equal the dimensions product (without the innermost dimension) plus one
-  /// ```rust,should_panic
+  #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
   /// use ndsparse::csl::CslVec;
   /// let _ = CslVec::new([10], vec![8, 9], vec![0, 5], vec![0, 2, 4]);
   /// ```
@@ -221,7 +226,8 @@ where
   /// ```
   ///
   /// * The data and indices length must be equal or less than the product of all dimensions length
-  /// ```rust,should_panic
+  #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
   /// use ndsparse::csl::CslVec;
   /// let _ = CslVec::new([10], vec![8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9], vec![0, 5], vec![0, 2]);
   /// ```
@@ -395,8 +401,8 @@ where
   ///
   /// * `DIMS` must be greater than 1
   /// ```rust,should_panic
-  /// use ndsparse::csl::CslVec;
-  /// let _ = CslVec::<[usize; 1], i32>::default().outermost_iter();
+  /// use ndsparse::csl::CslArray;
+  /// let _ = CslArray::<[usize; 0], [i32; 1], [usize; 1], [usize; 2]>::default().outermost_iter();
   /// ```
   pub fn outermost_iter(&self) -> CsIterRef<'_, DA, DATA> {
     CsIterRef::new(&self.dims, self.data.as_ref().as_ptr(), self.indcs.as_ref(), self.offs.as_ref())
@@ -421,8 +427,9 @@ where
   ///
   /// * `DIMS` must be greater than 1
   /// ```rust,should_panic
-  /// use ndsparse::csl::CslVec;
-  /// let _ = CslVec::<[usize; 1], i32>::default().outermost_rayon_iter();
+  /// use ndsparse::csl::CslArray;
+  /// let _csl = CslArray::<[usize; 0], [i32; 1], [usize; 1], [usize; 2]>::default();
+  /// _csl.outermost_rayon_iter();
   /// ```
   #[cfg(feature = "with_rayon")]
   pub fn outermost_rayon_iter(&self) -> crate::ParallelIteratorWrapper<CsIterRef<'_, DA, DATA>> {
@@ -566,7 +573,8 @@ where
   ///
   /// # Example
   ///
-  /// ```rust
+  #[cfg_attr(feature = "alloc", doc = "```rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
   /// use ndsparse::csl::CslVec;
   /// use rand::{thread_rng, Rng};
   /// let mut _random: CslVec<[usize; 8], u8>;
@@ -598,7 +606,8 @@ where
   ///
   /// # Example
   ///
-  /// ```rust
+  #[cfg_attr(feature = "alloc", doc = "```rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
   /// use ndsparse::{csl::CslVec, doc_tests::csl_vec_4};
   /// let mut csl = csl_vec_4();
   /// csl.clear();
@@ -628,7 +637,8 @@ where
   ///
   /// # Example
   ///
-  /// ```rust
+  #[cfg_attr(feature = "alloc", doc = "```rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
   /// use ndsparse::doc_tests::csl_vec_4;
   /// let mut csl = csl_vec_4();
   /// csl.swap_value([0, 0, 0, 0], [1, 0, 2, 2]);
@@ -661,7 +671,8 @@ where
   ///
   /// # Example
   ///
-  /// ```rust
+  #[cfg_attr(feature = "alloc", doc = "```rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
   /// use ndsparse::{csl::CslVec, doc_tests::csl_vec_4};
   /// let mut csl = csl_vec_4();
   /// csl.truncate([0, 0, 3, 4]);

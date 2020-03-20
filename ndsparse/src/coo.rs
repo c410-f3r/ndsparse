@@ -76,7 +76,8 @@ where
   ///
   /// # Example
   ///
-  /// ```rust
+  #[cfg_attr(all(feature = "alloc", feature = "const_generics"), doc = "```rust")]
+  #[cfg_attr(not(all(feature = "alloc", feature = "const_generics")), doc = "```ignore,rust")]
   /// use ndsparse::coo::{CooArray, CooVec};
   /// // Sparse array ([8, _, _, _, _, 9, _, _, _, _])
   /// let mut _sparse_array = CooArray::new([10], [([0].into(), 8.0), ([5].into(), 9.0)]);
@@ -200,7 +201,8 @@ where
   ///
   /// # Example
   ///
-  /// ```rust
+  #[cfg_attr(feature = "alloc", doc = "```rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
   /// use ndsparse::coo::CooVec;
   /// use rand::{thread_rng, Rng};
   /// let mut _random: CooVec<[usize; 8], u8>;
