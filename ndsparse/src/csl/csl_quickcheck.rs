@@ -1,8 +1,8 @@
 use crate::{
-  csl::{max_nnz, Csl, CslVec},
+  csl::{Csl, CslVec},
   Dims,
 };
-use cl_traits::{ArrayWrapper, Push, Storage};
+use cl_traits::{Push, Storage};
 
 impl<DA, DATA, DS, IS, OS> quickcheck::Arbitrary for Csl<DA, DS, IS, OS>
 where
@@ -24,15 +24,7 @@ where
   where
     G: quickcheck::Gen,
   {
-    use rand::Rng;
-    let zero_cut_point = g.gen_range(0, DA::CAPACITY + 1);
-    let mut dims = ArrayWrapper::default();
-    dims[zero_cut_point..]
-      .iter_mut()
-      .for_each(|dim| *dim = if g.size() > 1 { g.gen_range(1, g.size()) } else { 1 });
-    let max_nnz = max_nnz(&dims);
-    let nnz = g.gen_range(0, if max_nnz == 0 { 1 } else { max_nnz });
-    Self::new_random_with_rand(dims, nnz, g, |g, _| g.gen())
+    Self::new_random_with_rand(g, g.size())
   }
 }
 

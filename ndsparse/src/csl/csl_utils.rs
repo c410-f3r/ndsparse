@@ -161,19 +161,6 @@ where
 }
 
 #[inline]
-pub fn max_nnz<DA>(dims: &ArrayWrapper<DA>) -> usize
-where
-  DA: Dims,
-{
-  match DA::CAPACITY {
-    0 => 0,
-    1 => dims[0],
-    _ if dims == &ArrayWrapper::default() => 0,
-    _ => dims.slice().iter().filter(|dim| **dim != 0).product::<usize>(),
-  }
-}
-
-#[inline]
 pub(crate) fn offs_len<DA>(dims: &ArrayWrapper<DA>) -> usize
 where
   DA: Dims,

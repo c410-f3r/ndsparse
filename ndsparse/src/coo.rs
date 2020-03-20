@@ -77,7 +77,7 @@ where
   /// # Example
   ///
   #[cfg_attr(all(feature = "alloc", feature = "const_generics"), doc = "```rust")]
-  #[cfg_attr(not(all(feature = "alloc", feature = "const_generics")), doc = "```ignore,rust")]
+  #[cfg_attr(not(all(feature = "alloc", feature = "const_generics")), doc = "```ignore")]
   /// use ndsparse::coo::{CooArray, CooVec};
   /// // Sparse array ([8, _, _, _, _, 9, _, _, _, _])
   /// let mut _sparse_array = CooArray::new([10], [([0].into(), 8.0), ([5].into(), 9.0)]);
@@ -118,7 +118,13 @@ where
     );
     assert!(
       data.as_ref().iter().all(|(indcs, _)| {
-        indcs.slice().iter().zip(dims.slice().iter()).all(|(data_idx, dim)| data_idx < dim)
+        indcs.slice().iter().zip(dims.slice().iter()).all(|(data_idx, dim)| {
+          if dim == &0 {
+            true
+          } else {
+            data_idx < dim
+          }
+        })
       }),
       "All indices must be lesser than the defined dimensions"
     );
@@ -202,14 +208,33 @@ where
   /// # Example
   ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::coo::CooVec;
   /// use rand::{thread_rng, Rng};
-  /// let mut _random: CooVec<[usize; 8], u8>;
   /// let mut rng = thread_rng();
-  /// _random = CooVec::new_random_with_rand([1, 2, 3, 4, 5, 6, 7, 8], 9, &mut rng, |r, _| r.gen());
+  /// let dims = [1, 2, 3, 4, 5, 6, 7, 8];
+  /// let mut _random: CooVec<[usize; 8], u8>;
+  /// _random = CooVec::new_controlled_random_with_rand(dims, 9, &mut rng, |r, _| r.gen());
   /// ```
-  pub fn new_random_with_rand<F, ID, R>(into_dims: ID, nnz: usize, rng: &mut R, mut cb: F) -> Self
+  ///
+  /// # Assertions
+  ///
+  /// * `nnz` must be equal or less than the maximum number of non-zero elements
+  #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
+  /// use ndsparse::coo::CooVec;
+  /// use rand::{thread_rng, Rng};
+  /// let mut rng = thread_rng();
+  /// let dims = [1, 2, 3]; // Max of 6 elements (1 * 2 * 3)
+  /// let mut _random: CooVec<[usize; 3], u8>;
+  /// _random = CooVec::new_controlled_random_with_rand(dims, 7, &mut rng, |r, _| r.gen());
+  /// ```
+  pub fn new_controlled_random_with_rand<F, ID, R>(
+    into_dims: ID,
+    nnz: usize,
+    rng: &mut R,
+    mut cb: F,
+  ) -> Self
   where
     F: FnMut(&mut R, &DA) -> DATA,
     ID: Into<ArrayWrapper<DA>>,
@@ -217,18 +242,58 @@ where
   {
     use rand::distributions::Distribution;
     let dims = into_dims.into();
+    assert!(
+      nnz <= crate::utils::max_nnz(&dims),
+      "`nnz` must be equal or less than the maximum number of non-zero elements"
+    );
     let mut data: DS = Default::default();
     for _ in 0..nnz {
-      data.push({
-        let indcs: DA = cl_traits::create_array(|idx| {
+      let indcs_array: DA = cl_traits::create_array(|idx| {
+        if dims[idx] == 0 {
+          0
+        } else {
           rand::distributions::Uniform::from(0..dims[idx]).sample(rng)
-        });
-        let element = cb(rng, &indcs);
-        (indcs.into(), element)
+        }
       });
+      let indcs = indcs_array.into();
+      if data.as_ref().iter().all(|value| value.0 != indcs) {
+        data.push({
+          let element = cb(rng, &indcs);
+          (indcs, element)
+        });
+      }
     }
     data.as_mut().sort_unstable_by(|a, b| a.0.cmp(&b.0));
     Coo::new(dims, data)
+  }
+
+  /// Creates a new random and valid instance.
+  ///
+  /// # Arguments
+  ///
+  /// * `rng`: `rand::Rng` trait
+  /// * `upper_bound`: The maximum allowed exclusive dimension
+  ///
+  /// # Example
+  ///
+  #[cfg_attr(feature = "alloc", doc = "```rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
+  /// use ndsparse::coo::CooVec;
+  /// use rand::{seq::SliceRandom, thread_rng};
+  /// let mut rng = thread_rng();
+  /// let upper_bound = 5;
+  /// let random: CooVec<[usize; 8], u8> = CooVec::new_random_with_rand(&mut rng, upper_bound);
+  /// assert!(random.dims().choose(&mut rng).unwrap() < &upper_bound);
+  /// ```
+  pub fn new_random_with_rand<R>(rng: &mut R, upper_bound: usize) -> Self
+  where
+    R: rand::Rng,
+    rand::distributions::Standard: rand::distributions::Distribution<DATA>,
+  {
+    let dims = crate::utils::valid_random_dims(rng, upper_bound);
+    let max_nnz = crate::utils::max_nnz(&dims);
+    let nnz = if max_nnz == 0 { 0 } else { rng.gen_range(0, max_nnz) };
+    Self::new_controlled_random_with_rand(dims, nnz, rng, |rng, _| rng.gen())
   }
 }
 
@@ -252,9 +317,6 @@ where
   where
     G: quickcheck::Gen,
   {
-    use rand::Rng;
-    let dims: DA = cl_traits::create_array(|_| g.gen_range(0, g.size()));
-    let nnz = g.gen_range(0, dims.slice().iter().product::<usize>());
-    Self::new_random_with_rand(dims, nnz, g, |g, _| g.gen())
+    Self::new_random_with_rand(g, g.size())
   }
 }

@@ -36,7 +36,7 @@ where
   /// # Example
   ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::csl::{CslRef, CslVec};
   /// let mut csl = CslVec::<[usize; 3], i32>::default();
   /// csl
@@ -57,7 +57,7 @@ where
   ///
   /// * The next dimension must not exceed the defined number of dimensions.
   #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::csl::CslVec;
   /// let _ = CslVec::<[usize; 0], i32>::default().constructor().next_outermost_dim(2);
   /// ```
@@ -73,7 +73,7 @@ where
   /// # Example
   ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::csl::{CslRef, CslVec};
   /// let mut csl = CslVec::<[usize; 3], i32>::default();
   /// let constructor = csl.constructor();
@@ -98,7 +98,7 @@ where
   /// # Example
   ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::csl::{CslRef, CslVec};
   /// let mut csl = CslVec::<[usize; 3], i32>::default();
   /// csl.constructor().next_outermost_dim(50).push_line(&[1, 2], &[1, 40]);

@@ -1,5 +1,6 @@
 use crate::{
-  csl::{max_nnz, offs_len, outermost_stride, Csl},
+  csl::{offs_len, outermost_stride, Csl},
+  utils::max_nnz,
   Dims,
 };
 use cl_traits::{Push, Storage};

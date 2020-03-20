@@ -18,7 +18,7 @@ mod csl_utils;
 #[cfg(feature = "with_rand")]
 mod csl_rnd;
 use crate::{
-  utils::{are_in_ascending_order, are_in_upper_bound, does_not_have_duplicates},
+  utils::{are_in_ascending_order, are_in_upper_bound, does_not_have_duplicates, max_nnz},
   Dims,
 };
 #[cfg(feature = "alloc")]
@@ -123,7 +123,7 @@ where
   /// # Example
   ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::csl::CslVec;
   /// let dims = [11, 10, 1];
   /// let nolp1 = dims.iter().rev().skip(1).product::<usize>() + 1;
@@ -181,7 +181,7 @@ where
   /// # Example
   ///
   #[cfg_attr(all(feature = "alloc", feature = "const_generics"), doc = "```rust")]
-  #[cfg_attr(not(all(feature = "alloc", feature = "const_generics")), doc = "```ignore,rust")]
+  #[cfg_attr(not(all(feature = "alloc", feature = "const_generics")), doc = "```ignore")]
   /// use ndsparse::csl::{CslArray, CslVec};
   /// // Sparse array ([8, _, _, _, _, 9, _, _, _, _])
   /// let mut _sparse_array = CslArray::new([10], [8.0, 9.0], [0, 5], [0, 2]);
@@ -194,14 +194,14 @@ where
   ///
   /// * Innermost dimensions length must be greater than zero
   #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::csl::CslVec;
   /// let _: CslVec<[usize; 7], i32> = CslVec::new([1, 2, 3, 4, 5, 0, 7], vec![], vec![], vec![]);
   /// ```
   ///
   /// * The data length must equal the indices length
   #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::csl::CslVec;
   /// let _ = CslVec::new([10], vec![8, 9], vec![0], vec![0, 2]);
   /// ```
@@ -214,7 +214,7 @@ where
   ///
   /// * Offsets length must equal the dimensions product (without the innermost dimension) plus one
   #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::csl::CslVec;
   /// let _ = CslVec::new([10], vec![8, 9], vec![0, 5], vec![0, 2, 4]);
   /// ```
@@ -227,7 +227,7 @@ where
   ///
   /// * The data and indices length must be equal or less than the product of all dimensions length
   #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::csl::CslVec;
   /// let _ = CslVec::new([10], vec![8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9], vec![0, 5], vec![0, 2]);
   /// ```
@@ -574,24 +574,78 @@ where
   /// # Example
   ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::csl::CslVec;
   /// use rand::{thread_rng, Rng};
-  /// let mut _random: CslVec<[usize; 8], u8>;
   /// let mut rng = thread_rng();
-  /// _random = CslVec::new_random_with_rand([1, 2, 3, 4, 5, 6, 7, 8], 9, &mut rng, |r, _| r.gen());
+  /// let dims = [1, 2, 3, 4, 5, 6, 7, 8];
+  /// let mut _random: CslVec<[usize; 8], u8>;
+  /// _random = CslVec::new_controlled_random_with_rand(dims, 9, &mut rng, |r, _| r.gen());
   /// ```
-  pub fn new_random_with_rand<F, ID, R>(into_dims: ID, nnz: usize, rng: &mut R, cb: F) -> Self
+  ///
+  /// # Assertions
+  ///
+  /// * `nnz` must be equal or less than the maximum number of non-zero elements
+  #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
+  /// use ndsparse::csl::CslVec;
+  /// use rand::{thread_rng, Rng};
+  /// let mut rng = thread_rng();
+  /// let dims = [1, 2, 3]; // Max of 6 elements (1 * 2 * 3)
+  /// let mut _random: CslVec<[usize; 3], u8>;
+  /// _random = CslVec::new_controlled_random_with_rand(dims, 7, &mut rng, |r, _| r.gen());
+  /// ```
+  pub fn new_controlled_random_with_rand<F, ID, R>(
+    into_dims: ID,
+    nnz: usize,
+    rng: &mut R,
+    cb: F,
+  ) -> Self
   where
     F: FnMut(&mut R, DA) -> DATA,
     ID: Into<ArrayWrapper<DA>>,
     R: rand::Rng,
   {
     let dims = into_dims.into();
+    assert!(
+      nnz <= max_nnz(&dims),
+      "`nnz` must be equal or less than the maximum number of non-zero elements"
+    );
     let mut csl = Self::default();
     csl.dims = dims;
     csl_rnd::CslRnd::new(&mut csl, nnz, rng).fill(cb);
-    Csl::new(csl.dims, csl.data, csl.indcs, csl.offs)
+    Self::new(csl.dims, csl.data, csl.indcs, csl.offs)
+  }
+
+  /// Creates a new random and valid instance.
+  ///
+  /// # Arguments
+  ///
+  /// * `rng`: `rand::Rng` trait
+  /// * `upper_bound`: The maximum allowed exclusive dimension
+  ///
+  /// # Example
+  ///
+  /// # Example
+  ///
+  #[cfg_attr(feature = "alloc", doc = "```rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
+  /// use ndsparse::csl::CslVec;
+  /// use rand::{seq::SliceRandom, thread_rng};
+  /// let mut rng = thread_rng();
+  /// let upper_bound = 5;
+  /// let random: CslVec<[usize; 8], u8> = CslVec::new_random_with_rand(&mut rng, upper_bound);
+  /// assert!(random.dims().choose(&mut rng).unwrap() < &upper_bound);
+  /// ```
+  pub fn new_random_with_rand<R>(rng: &mut R, upper_bound: usize) -> Self
+  where
+    R: rand::Rng,
+    rand::distributions::Standard: rand::distributions::Distribution<DATA>,
+  {
+    let dims = crate::utils::valid_random_dims(rng, upper_bound);
+    let max_nnz = max_nnz(&dims);
+    let nnz = if max_nnz == 0 { 0 } else { rng.gen_range(0, max_nnz) };
+    Self::new_controlled_random_with_rand(dims, nnz, rng, |rng, _| rng.gen())
   }
 }
 
@@ -607,7 +661,7 @@ where
   /// # Example
   ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::{csl::CslVec, doc_tests::csl_vec_4};
   /// let mut csl = csl_vec_4();
   /// csl.clear();
@@ -638,7 +692,7 @@ where
   /// # Example
   ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::doc_tests::csl_vec_4;
   /// let mut csl = csl_vec_4();
   /// csl.swap_value([0, 0, 0, 0], [1, 0, 2, 2]);
@@ -672,7 +726,7 @@ where
   /// # Example
   ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore,rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::{csl::CslVec, doc_tests::csl_vec_4};
   /// let mut csl = csl_vec_4();
   /// csl.truncate([0, 0, 3, 4]);
