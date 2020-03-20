@@ -1,10 +1,11 @@
 [dependencies]
 cl-traits = "1.0"
 ndsparse = { features = ["alloc"], path = "../ndsparse" }
-pyo3 = { features = ["extension-module"], git = "https://github.com/PyO3/pyo3", optional = true }
+pyo3 = { features = ["extension-module"], optional = true, version = "0.9" }
 wasm-bindgen = { optional = true, version = "0.2" }
 
 [features]
+default = []
 with_pyo3 = ["pyo3"]
 with_wasm_bindgen = ["wasm-bindgen"]
 
