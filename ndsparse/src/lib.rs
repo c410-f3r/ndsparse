@@ -1,6 +1,6 @@
 #![cfg_attr(feature = "const_generics", allow(incomplete_features))]
 #![cfg_attr(feature = "const_generics", feature(const_generics))]
-#![cfg_attr(not(feature = "with_rayon"), no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![deny(rust_2018_idioms)]
 #![doc(test(attr(forbid(
   unused_variables,
