@@ -1,6 +1,5 @@
 use crate::{
   csl::{offs_len, outermost_stride, Csl},
-  utils::max_nnz,
   Dims,
 };
 use cl_traits::{Push, Storage};
@@ -84,27 +83,59 @@ where
   }
 
   fn fill_offs(&mut self) {
+    let nnz = self.nnz;
     for _ in 0..offs_len(&self.csl.dims) {
       self.csl.offs.push(0);
     }
-    let nnz = Uniform::from(0..=max_nnz(&self.csl.dims)).sample(self.rng);
-    let mut previous_off = 0;
-    for idx in 1..self.csl.offs.as_ref().len() {
-      match previous_off.cmp(&nnz) {
+    let mut last_visited_off = self.do_fill_offs(|idl, _, s| Uniform::from(0..=idl).sample(s.rng));
+    loop {
+      if *self.csl.offs.as_ref().get(last_visited_off).unwrap() >= nnz {
+        let slice_opt = self.csl.offs.as_mut().get_mut(last_visited_off..);
+        slice_opt.unwrap().iter_mut().for_each(|off| *off = nnz);
+        break;
+      }
+      let mut offs_adjustment = 0;
+      last_visited_off = self.do_fill_offs(|idl, idx, s| {
+        let offs = s.csl.offs.as_mut();
+        let curr = offs[idx] + offs_adjustment;
+        let prev = offs[idx - 1];
+        let start = curr - prev;
+        let line_nnz = Uniform::from(start..=idl).sample(s.rng);
+        offs_adjustment += (line_nnz + prev) - curr;
+        line_nnz
+      });
+    }
+  }
+
+  fn do_fill_offs<F>(&mut self, mut f: F) -> usize
+  where
+    F: FnMut(usize, usize, &mut Self) -> usize,
+  {
+    let nnz = self.nnz;
+    let mut idx = 1;
+    let mut previous_nnz = *self.csl.offs.as_ref().first().unwrap();
+    loop {
+      if idx >= self.csl.offs.as_ref().len() {
+        break;
+      }
+      match previous_nnz.cmp(&nnz) {
         Ordering::Equal => {
-          *self.csl.offs.as_mut().get_mut(idx).unwrap() = nnz;
+          break;
         }
         Ordering::Greater => {
           *self.csl.offs.as_mut().get_mut(idx - 1).unwrap() = nnz;
-          *self.csl.offs.as_mut().get_mut(idx).unwrap() = nnz;
+          break;
         }
         Ordering::Less => {
           let innermost_dim_len = *self.csl.dims.slice().last().unwrap();
-          let line_nnz = Uniform::from(0..=innermost_dim_len).sample(self.rng);
-          *self.csl.offs.as_mut().get_mut(idx).unwrap() = previous_off + line_nnz;
+          let line_nnz = f(innermost_dim_len, idx, self);
+          let new_nnz = previous_nnz + line_nnz;
+          *self.csl.offs.as_mut().get_mut(idx).unwrap() = new_nnz;
+          previous_nnz = new_nnz;
         }
       }
-      previous_off = *self.csl.offs.as_ref().get(idx).unwrap();
+      idx += 1;
     }
+    idx - 1
   }
 }
