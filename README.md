@@ -57,7 +57,7 @@ fn main() {
 
 ## Optional features
 
-- `alloc`
+- `alloc` and `std`
 - Constant generics
 - Bindings (Py03, wasm-bindgen)
 - Deserialization/Serialization (serde)
