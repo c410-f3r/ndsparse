@@ -1,5 +1,5 @@
-#![cfg_attr(feature = "const_generics", allow(incomplete_features))]
-#![cfg_attr(feature = "const_generics", feature(const_generics))]
+#![cfg_attr(feature = "const-generics", allow(incomplete_features))]
+#![cfg_attr(feature = "const-generics", feature(const_generics))]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(rust_2018_idioms)]
 #![doc(test(attr(forbid(
@@ -26,5 +26,5 @@ mod utils;
 
 pub use cl_traits::ArrayWrapper;
 pub use dims::*;
-#[cfg(feature = "with_rayon")]
+#[cfg(feature = "with-rayon")]
 pub use utils::{ParallelIteratorWrapper, ParallelProducerWrapper};

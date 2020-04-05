@@ -61,13 +61,13 @@ fn main() {
 - Constant generics
 - Bindings (Py03, wasm-bindgen)
 - Deserialization/Serialization (serde)
-- Dynamic arrays (ArrayVec, SmallVec and StaticVec)
+- Dynamic arrays (ArrayVec, SmallVec, StaticVec and TinyVec)
 - Parallel iterators (rayon)
 - Random instances (rand)
 
 ## Nightly compiler
 
-If dimensions or array storages with more than 32 elements are needed, then it is necessary to include the `const_generics` feature that is only available when using a nightly Rustc compiler.
+If dimensions or array storages with more than 32 elements are needed, then it is necessary to include the `const-generics` feature that is only available when using a nightly Rustc compiler.
 
 ## Future
 

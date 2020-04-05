@@ -1,25 +1,29 @@
 [dependencies]
-cl-traits = "1.0"
+arrayvec = { default-features = false, optional = true, version = "0.5" }
+cl-traits = { default-features = false, version = "2.0" }
 rand = { default-features = false, optional = true, version = "0.7" }
 rayon = { default-features = false, optional = true, version = "1.0" }
 serde = { default-features = false, features = ["derive"], optional = true, version = "1.0" }
+smallvec = { default-features = false, optional = true, version = "1.2" }
 staticvec = { default-features = false, optional = true, version = "0.9" }
+tinyvec = { default-features = false, optional = true, version = "0.3" }
 
 [dev-dependencies]
 quickcheck = "0.9"
 quickcheck_macros = "0.9"
 
 [features]
-alloc = ["cl-traits/alloc", "rand/alloc", "serde/alloc"]
-const_generics = ["cl-traits/const_generics"]
+alloc = ["cl-traits/alloc", "rand/alloc", "serde/alloc", "tinyvec/alloc"]
+const-generics = ["cl-traits/const-generics"]
 default = []
-std = ["alloc", "cl-traits/std", "rand/std", "serde/std"]
-with_arrayvec = ["cl-traits/with_arrayvec"]
-with_rand = ["rand"]
-with_rayon = ["rayon", "std"]
-with_serde = ["cl-traits/with_serde", "rand/serde1", "serde"]
-with_smallvec = ["cl-traits/with_smallvec"]
-with_staticvec = ["cl-traits/with_staticvec", "const_generics", "staticvec", "staticvec/serde_support", "staticvec/std"]
+std = ["alloc", "arrayvec/std", "cl-traits/std", "rand/std", "serde/std"]
+with-arrayvec = ["arrayvec", "cl-traits/with-arrayvec"]
+with-rand = ["rand"]
+with-rayon = ["rayon", "std"]
+with-serde = ["cl-traits/with-serde", "arrayvec/serde", "rand/serde1", "serde", "smallvec/serde"]
+with-smallvec = ["cl-traits/with-smallvec", "smallvec"]
+with-staticvec = ["cl-traits/with-staticvec", "const-generics", "staticvec", "staticvec/serde_support", "staticvec/std"]
+with-tinyvec = ["cl-traits/tinyvec", "tinyvec"]
 
 [package]
 authors = ["Caio Fernandes <c410.f3r@gmail.com>"]

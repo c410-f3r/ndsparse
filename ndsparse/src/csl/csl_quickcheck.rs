@@ -33,7 +33,7 @@ macro_rules! create_tests {
     mod $mod_name {
       use crate::csl::CslVec;
 
-      #[cfg(feature = "with_rayon")]
+      #[cfg(feature = "with-rayon")]
       #[quickcheck_macros::quickcheck]
       fn csl_outermost_rayon_iter(csl: CslVec<[usize; $dim], i32>) -> bool {
         use rayon::prelude::*;

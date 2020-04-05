@@ -5,9 +5,9 @@
 //! the overhead of heap allocating.
 
 use ndsparse::csl::Csl;
-#[cfg(feature = "with_pyo3")]
+#[cfg(feature = "with-pyo3")]
 use pyo3::prelude::*;
-#[cfg(feature = "with_wasm_bindgen")]
+#[cfg(feature = "with-wasm-bindgen")]
 use wasm_bindgen::prelude::*;
 
 macro_rules! create_csl {
@@ -19,8 +19,8 @@ macro_rules! create_csl {
     $offs_storage:ty,
     $dims:literal
   ) => {
-    #[cfg_attr(feature = "with_pyo3", pyclass)]
-    #[cfg_attr(feature = "with_wasm_bindgen", wasm_bindgen)]
+    #[cfg_attr(feature = "with-pyo3", pyclass)]
+    #[cfg_attr(feature = "with-wasm-bindgen", wasm_bindgen)]
     #[derive(Debug)]
     pub struct $struct_name {
       csl: Csl<[usize; $dims], $data_storage, $indcs_storage, $offs_storage>,
@@ -28,8 +28,8 @@ macro_rules! create_csl {
 
     // Generic
 
-    #[cfg_attr(feature = "with_pyo3", pymethods)]
-    #[cfg_attr(feature = "with_wasm_bindgen", wasm_bindgen)]
+    #[cfg_attr(feature = "with-pyo3", pymethods)]
+    #[cfg_attr(feature = "with-wasm-bindgen", wasm_bindgen)]
     impl $struct_name {
       pub fn clear(&mut self) {
         self.csl.clear()
@@ -54,7 +54,7 @@ macro_rules! create_csl {
 
     // PyO3
 
-    #[cfg(feature = "with_pyo3")]
+    #[cfg(feature = "with-pyo3")]
     #[pymethods]
     impl $struct_name {
       #[new]
@@ -78,7 +78,7 @@ macro_rules! create_csl {
 
     // wasm-bindgen
 
-    #[cfg(feature = "with_wasm_bindgen")]
+    #[cfg(feature = "with-wasm-bindgen")]
     #[wasm_bindgen]
     impl $struct_name {
       #[wasm_bindgen(constructor)]
@@ -125,7 +125,7 @@ create_csl!(Csl5VecF64, f64, Vec<f64>, Vec<usize>, Vec<usize>, 5);
 create_csl!(Csl6VecF64, f64, Vec<f64>, Vec<usize>, Vec<usize>, 6);
 create_csl!(Csl7VecF64, f64, Vec<f64>, Vec<usize>, Vec<usize>, 7);
 
-#[cfg(feature = "with_wasm_bindgen")]
+#[cfg(feature = "with-wasm-bindgen")]
 fn from_vec_to_array<A>(vec: Vec<A::Item>) -> A
 where
   A: cl_traits::Array,

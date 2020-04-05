@@ -9,13 +9,13 @@
 
 mod csl_iter;
 mod csl_line_constructor;
-#[cfg(all(test, feature = "alloc", feature = "with_rand"))]
+#[cfg(all(test, feature = "alloc", feature = "with-rand"))]
 mod csl_quickcheck;
-#[cfg(feature = "with_rayon")]
+#[cfg(feature = "with-rayon")]
 mod csl_rayon;
 mod csl_utils;
 
-#[cfg(feature = "with_rand")]
+#[cfg(feature = "with-rand")]
 mod csl_rnd;
 use crate::{
   utils::{are_in_ascending_order, are_in_upper_bound, does_not_have_duplicates, max_nnz},
@@ -27,58 +27,67 @@ use cl_traits::{ArrayWrapper, Clear, Push, Storage, Truncate, WithCapacity};
 use core::ops::Range;
 pub use csl_iter::*;
 pub use csl_line_constructor::*;
-#[cfg(feature = "with_rayon")]
+#[cfg(feature = "with-rayon")]
 pub use csl_rayon::*;
 use csl_utils::*;
 
 /// CSL backed by a static array.
-///
-/// * Types
-///
-/// * `DA`: Dimensions Array
-/// * `DTA` DaTa Array
-/// * `IA`: Indices Array
-/// * `OA`: Offsets Array
 pub type CslArray<DA, DTA, IA, OA> = Csl<DA, ArrayWrapper<DTA>, ArrayWrapper<IA>, ArrayWrapper<OA>>;
-#[cfg(feature = "with_arrayvec")]
+
+/// CSL backed by a mutable slice
+pub type CslMut<'a, DA, DATA> = Csl<DA, &'a mut [DATA], &'a [usize], &'a [usize]>;
+
+/// CSL backed by a slice
+pub type CslRef<'a, DA, DATA> = Csl<DA, &'a [DATA], &'a [usize], &'a [usize]>;
+
+/// CSL backed by a dynamic vector.
+#[cfg(feature = "alloc")]
+pub type CslVec<DA, DATA> = Csl<DA, Vec<DATA>, Vec<usize>, Vec<usize>>;
+
 /// CSL backed by the `ArrayVec` dependency.
+#[cfg(feature = "with-arrayvec")]
 pub type CslArrayVec<DA, DTA, IA, OA> = Csl<
   DA,
-  cl_traits::ArrayVecArrayWrapper<DTA>,
-  cl_traits::ArrayVecArrayWrapper<IA>,
-  cl_traits::ArrayVecArrayWrapper<OA>,
+  arrayvec::ArrayVec<cl_traits::ArrayWrapper<DTA>>,
+  arrayvec::ArrayVec<cl_traits::ArrayWrapper<IA>>,
+  arrayvec::ArrayVec<cl_traits::ArrayWrapper<OA>>,
 >;
-/// Mutable CSL reference.
-pub type CslMut<'a, DA, DATA> = Csl<DA, &'a mut [DATA], &'a [usize], &'a [usize]>;
-/// Immutable CSL reference.
-pub type CslRef<'a, DA, DATA> = Csl<DA, &'a [DATA], &'a [usize], &'a [usize]>;
-#[cfg(feature = "with_smallvec")]
-/// CSL backed by the `SmallVec` dependency.
-///
-///
-/// * Types
-///
-/// * `DA`: Dimensions Array
-/// * `DTA` DaTa Array
-/// * `IA`: Indices Array
-/// * `OA`: Offsets Array
+
+/// CSL backed by the `smallvec` dependency.
+#[cfg(feature = "with-smallvec")]
 pub type CslSmallVec<DA, DTA, IA, OA> = Csl<
   DA,
-  cl_traits::SmallVecArrayWrapper<DTA>,
-  cl_traits::SmallVecArrayWrapper<IA>,
-  cl_traits::SmallVecArrayWrapper<OA>,
+  smallvec::SmallVec<cl_traits::ArrayWrapper<DTA>>,
+  smallvec::SmallVec<cl_traits::ArrayWrapper<IA>>,
+  smallvec::SmallVec<cl_traits::ArrayWrapper<OA>>,
 >;
-#[cfg(feature = "with_staticvec")]
-/// CSL backed by the `StaticVec` dependency
+
+/// CSL backed by the `staticvec` dependency
+#[cfg(feature = "with-staticvec")]
 pub type CslStaticVec<DATA, const DIMS: usize, const NNZ: usize, const OFFS: usize> = Csl<
   [usize; DIMS],
   staticvec::StaticVec<DATA, NNZ>,
   staticvec::StaticVec<usize, NNZ>,
   staticvec::StaticVec<usize, OFFS>,
 >;
-#[cfg(feature = "alloc")]
-/// CSL backed by a dynamic vector.
-pub type CslVec<DA, DATA> = Csl<DA, Vec<DATA>, Vec<usize>, Vec<usize>>;
+
+/// CSL backed by the `TinyVec` structure from the `tinyvec` dependency
+#[cfg(all(feature = "aloc", feature = "with-tinyvec"))]
+pub type CslTinyVec<DA, DTA, IA, OA> = Csl<
+  DA,
+  tinyvec::TinyVec<cl_traits::ArrayWrapper<DTA>>,
+  tinyvec::TinyVec<cl_traits::ArrayWrapper<IA>>,
+  tinyvec::TinyVec<cl_traits::ArrayWrapper<OA>>,
+>;
+
+/// CSL backed by the `ArrayVec` structure from the `tinyvec` dependency
+#[cfg(feature = "with-tinyvec")]
+pub type CslTinyVecArrayVec<DA, DTA, IA, OA> = Csl<
+  DA,
+  tinyvec::ArrayVec<cl_traits::ArrayWrapper<DTA>>,
+  tinyvec::ArrayVec<cl_traits::ArrayWrapper<IA>>,
+  tinyvec::ArrayVec<cl_traits::ArrayWrapper<OA>>,
+>;
 
 /// Base structure for all CSL* variants.
 ///
@@ -91,7 +100,7 @@ pub type CslVec<DA, DATA> = Csl<DA, Vec<DATA>, Vec<usize>, Vec<usize>>;
 /// * `IS`: Indices Storage
 /// * `OS`: Offsets Storage
 /// * `const DIMS: usize`: Dimensions length
-#[cfg_attr(feature = "with_serde", derive(serde::Deserialize, serde::Serialize))]
+#[cfg_attr(feature = "with-serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Csl<DA, DS, IS, OS>
 where
@@ -180,8 +189,8 @@ where
   ///
   /// # Example
   ///
-  #[cfg_attr(all(feature = "alloc", feature = "const_generics"), doc = "```rust")]
-  #[cfg_attr(not(all(feature = "alloc", feature = "const_generics")), doc = "```ignore")]
+  #[cfg_attr(all(feature = "alloc", feature = "const-generics"), doc = "```rust")]
+  #[cfg_attr(not(all(feature = "alloc", feature = "const-generics")), doc = "```ignore")]
   /// use ndsparse::csl::{CslArray, CslVec};
   /// // Sparse array ([8, _, _, _, _, 9, _, _, _, _])
   /// let mut _sparse_array = CslArray::new([10], [8.0, 9.0], [0, 5], [0, 2]);
@@ -431,7 +440,7 @@ where
   /// let _csl = CslArray::<[usize; 0], [i32; 1], [usize; 1], [usize; 2]>::default();
   /// _csl.outermost_rayon_iter();
   /// ```
-  #[cfg(feature = "with_rayon")]
+  #[cfg(feature = "with-rayon")]
   pub fn outermost_rayon_iter(&self) -> crate::ParallelIteratorWrapper<CsIterRef<'_, DA, DATA>> {
     crate::ParallelIteratorWrapper(self.outermost_iter())
   }
@@ -520,7 +529,7 @@ where
   }
 
   /// Mutable version of [`outermost_rayon_iter`](#method.outermost_rayon_iter).
-  #[cfg(feature = "with_rayon")]
+  #[cfg(feature = "with-rayon")]
   pub fn outermost_rayon_iter_mut(
     &mut self,
   ) -> crate::ParallelIteratorWrapper<CslIterMut<'_, DA, DATA>> {
@@ -554,7 +563,7 @@ where
   }
 }
 
-#[cfg(feature = "with_rand")]
+#[cfg(feature = "with-rand")]
 impl<DA, DATA, DS, IS, OS> Csl<DA, DS, IS, OS>
 where
   DA: Default + Dims,

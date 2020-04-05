@@ -39,7 +39,7 @@ macro_rules! impl_iter {
         $csl_iter { curr_idx: 0, data, dims, indcs, max_idx, offs }
       }
 
-      #[cfg(feature = "with_rayon")]
+      #[cfg(feature = "with-rayon")]
       pub(crate) fn split_at(self, idx: usize) -> [Self; 2] {
         let cut_point = self.curr_idx + idx;
         [

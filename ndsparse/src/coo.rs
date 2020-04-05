@@ -10,23 +10,37 @@ use coo_utils::*;
 
 /// COO backed by a static array.
 pub type CooArray<DA, DTA> = Coo<DA, ArrayWrapper<DTA>>;
-#[cfg(feature = "with_arrayvec")]
-/// COO backed by the `ArrayVec` dependency.
-pub type CooArrayVec<DA, DTA> = Coo<DA, cl_traits::ArrayVecArrayWrapper<DTA>>;
-/// Mutable COO reference.
+
+/// COO backed by a mutable slice
 pub type CooMut<'a, DA, DATA> = Coo<DA, &'a mut [(ArrayWrapper<DA>, DATA)]>;
-/// Immutable COO reference.
+
+/// COO backed by a slice
 pub type CooRef<'a, DA, DATA> = Coo<DA, &'a [(ArrayWrapper<DA>, DATA)]>;
-#[cfg(feature = "with_smallvec")]
-/// COO backed by the `SmallVec` dependency.
-pub type CooSmallVec<DA, DTA> = Coo<DA, cl_traits::SmallVecArrayWrapper<DTA>>;
-#[cfg(feature = "with_staticvec")]
-/// COO backed by the `StaticVec` dependency
-pub type CooStaticVec<DATA, const DIMS: usize, const NNZ: usize> =
-  Coo<[usize; DIMS], staticvec::StaticVec<(ArrayWrapper<[usize; DIMS]>, DATA), NNZ>>;
+
 #[cfg(feature = "alloc")]
 /// COO backed by a dynamic vector.
 pub type CooVec<DA, DATA> = Coo<DA, Vec<(ArrayWrapper<DA>, DATA)>>;
+
+/// COO backed by the `ArrayVec` dependency.
+#[cfg(feature = "with-arrayvec")]
+pub type CooArrayVec<DA, DTA> = Coo<DA, arrayvec::ArrayVec<cl_traits::ArrayWrapper<DTA>>>;
+
+/// COO backed by the `SmallVec` dependency.
+#[cfg(feature = "with-smallvec")]
+pub type CooSmallVec<DA, DTA> = Coo<DA, smallvec::SmallVec<cl_traits::ArrayWrapper<DTA>>>;
+
+/// COO backed by the `StaticVec` dependency
+#[cfg(feature = "with-staticvec")]
+pub type CooStaticVec<DATA, const DIMS: usize, const NNZ: usize> =
+  Coo<[usize; DIMS], staticvec::StaticVec<(ArrayWrapper<[usize; DIMS]>, DATA), NNZ>>;
+
+/// CSL backed by the `TinyVec` structure from the `tinyvec` dependency
+#[cfg(all(feature = "aloc", feature = "with-tinyvec"))]
+pub type CooTinyVec<DA, DTA> = Coo<DA, tinyvec::TinyVec<cl_traits::ArrayWrapper<DTA>>>;
+
+#[cfg(feature = "with-tinyvec")]
+/// CSL backed by the `ArrayVec` structure from the `tinyvec` dependency
+pub type CooTinyVecArrayVec<DA, DTA> = Coo<DA, tinyvec::ArrayVec<cl_traits::ArrayWrapper<DTA>>>;
 
 /// Base structure for all COO* variants.
 ///
@@ -34,7 +48,7 @@ pub type CooVec<DA, DATA> = Coo<DA, Vec<(ArrayWrapper<DA>, DATA)>>;
 ///
 /// * `DS`: Data Storage
 /// * `const DIMS: usize`: Dimensions length
-#[cfg_attr(feature = "with_serde", derive(serde::Deserialize, serde::Serialize))]
+#[cfg_attr(feature = "with-serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Coo<DA, DS>
 where
@@ -76,8 +90,8 @@ where
   ///
   /// # Example
   ///
-  #[cfg_attr(all(feature = "alloc", feature = "const_generics"), doc = "```rust")]
-  #[cfg_attr(not(all(feature = "alloc", feature = "const_generics")), doc = "```ignore")]
+  #[cfg_attr(all(feature = "alloc", feature = "const-generics"), doc = "```rust")]
+  #[cfg_attr(not(all(feature = "alloc", feature = "const-generics")), doc = "```ignore")]
   /// use ndsparse::coo::{CooArray, CooVec};
   /// // Sparse array ([8, _, _, _, _, 9, _, _, _, _])
   /// let mut _sparse_array = CooArray::new([10], [([0].into(), 8.0), ([5].into(), 9.0)]);
@@ -186,7 +200,7 @@ where
   }
 }
 
-#[cfg(feature = "with_rand")]
+#[cfg(feature = "with-rand")]
 impl<DA, DATA, DS> Coo<DA, DS>
 where
   DA: Dims,
@@ -297,7 +311,7 @@ where
   }
 }
 
-#[cfg(all(test, feature = "with_rand"))]
+#[cfg(all(test, feature = "with-rand"))]
 impl<DA, DATA, DS> quickcheck::Arbitrary for Coo<DA, DS>
 where
   DA: Dims + Clone + Send + 'static,

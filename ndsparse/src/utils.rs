@@ -1,12 +1,12 @@
 use crate::Dims;
 use cl_traits::ArrayWrapper;
 
-#[cfg(feature = "with_rayon")]
+#[cfg(feature = "with-rayon")]
 /// Parallel iterator for Rayon implementation. This is mostly an internal detail.
 #[derive(Debug)]
 pub struct ParallelIteratorWrapper<I>(pub(crate) I);
 
-#[cfg(feature = "with_rayon")]
+#[cfg(feature = "with-rayon")]
 /// Parallel producer for Rayon implementation. This is mostly an internal detail.
 #[derive(Debug)]
 pub struct ParallelProducerWrapper<I>(pub(crate) I);
@@ -57,7 +57,7 @@ where
   }
 }
 
-#[cfg(feature = "with_rand")]
+#[cfg(feature = "with-rand")]
 pub fn valid_random_dims<A: Dims, R: rand::Rng>(
   rng: &mut R,
   upper_bound: usize,

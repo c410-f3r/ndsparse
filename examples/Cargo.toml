@@ -1,5 +1,5 @@
 [dependencies]
-ndsparse = { features = ["with_arrayvec", "with_smallvec", "with_staticvec"], path = "../ndsparse" }
+ndsparse = { features = ["with-arrayvec", "with-smallvec", "with-staticvec"], path = "../ndsparse" }
 
 [[example]]
 name = "dynamic_arrays"
