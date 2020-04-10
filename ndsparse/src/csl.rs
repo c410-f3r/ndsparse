@@ -508,6 +508,39 @@ where
   IS: AsRef<[usize]>,
   OS: AsRef<[usize]>,
 {
+  /// Clears all values and dimensions.
+  ///
+  /// # Example
+  ///
+  #[cfg_attr(feature = "alloc", doc = "```rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
+  /// use ndsparse::{csl::CslVec, doc_tests::csl_vec_4};
+  /// let mut csl = csl_vec_4();
+  /// csl.clear();
+  /// assert_eq!(csl, CslVec::default());
+  /// ```
+  pub fn clear(&mut self)
+  where
+    DS: Clear,
+    IS: Clear,
+    OS: Clear,
+  {
+    self.dims = Default::default();
+    self.data.clear();
+    self.indcs.clear();
+    self.offs.clear();
+  }
+
+  /// See [`CslLineConstructor`](CslLineConstructor) for more information.
+  pub fn constructor(&mut self) -> CslLineConstructor<'_, DA, DS, IS, OS>
+  where
+    DS: Push<Input = DATA>,
+    IS: Push<Input = usize>,
+    OS: Push<Input = usize>,
+  {
+    CslLineConstructor::new(self)
+  }
+
   /// Mutable version of [`data`](#method.data).
   pub fn data_mut(&mut self) -> &mut [DATA] {
     self.data.as_mut()
@@ -544,22 +577,76 @@ where
     sub_dim_mut(self, range)
   }
 
+  /// Intra-swap a single data value.
+  ///
+  /// # Arguments
+  ///
+  /// * `a`: First set of indices
+  /// * `b`: Second set of indices
+  ///
+  /// # Example
+  ///
+  #[cfg_attr(feature = "alloc", doc = "```rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
+  /// use ndsparse::doc_tests::csl_vec_4;
+  /// let mut csl = csl_vec_4();
+  /// csl.swap_value([0, 0, 0, 0], [1, 0, 2, 2]);
+  /// assert_eq!(csl.data(), &[9, 2, 3, 4, 5, 6, 7, 8, 1]);
+  /// ```
+  ///
+  /// # Assertions
+  ///
+  /// Uses the same assertions of [`value`](#method.value).
+  pub fn swap_value(&mut self, a: DA, b: DA) -> bool {
+    assert!(a.slice()[..] < self.dims[..] && b.slice()[..] < self.dims[..]);
+    if let Some(a_idx) = data_idx(self, a) {
+      if let Some(b_idx) = data_idx(self, b) {
+        self.data.as_mut().swap(a_idx, b_idx);
+        return true;
+      }
+    }
+    false
+  }
+
+  /// Truncates all values in the exactly exclusive point defined by `indcs`.
+  ///
+  /// # Example
+  ///
+  #[cfg_attr(feature = "alloc", doc = "```rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
+  /// use ndsparse::{csl::CslVec, doc_tests::csl_vec_4};
+  /// let mut csl = csl_vec_4();
+  /// csl.truncate([0, 0, 3, 4]);
+  /// assert_eq!(
+  ///   csl,
+  ///   CslVec::new([0, 0, 4, 5], vec![1, 2, 3, 4], vec![0, 3, 1, 3], vec![0, 2, 3, 3, 4])
+  /// );
+  /// ```
+  pub fn truncate(&mut self, indcs: DA)
+  where
+    DA: Dims,
+    DS: Truncate<Input = usize>,
+    IS: Truncate<Input = usize>,
+    OS: Push<Input = usize> + Truncate<Input = usize>,
+  {
+    if let Some([offs_indcs, values]) = line_offs(&self.dims, &indcs, self.offs.as_ref()) {
+      let cut_point = values.start + 1;
+      self.data.truncate(cut_point);
+      self.indcs.truncate(cut_point);
+      self.offs.truncate(offs_indcs.start + 1);
+      self.offs.push(*indcs.slice().last().unwrap());
+      indcs
+        .slice()
+        .iter()
+        .zip(self.dims.slice_mut().iter_mut())
+        .filter(|(a, _)| **a == 0)
+        .for_each(|(_, b)| *b = 0);
+    }
+  }
+
   /// Mutable version of [`value`](#method.value).
   pub fn value_mut(&mut self, indcs: DA) -> Option<&mut DATA> {
     data_idx(self, indcs).map(move |idx| &mut self.data.as_mut()[idx])
-  }
-}
-
-impl<DA, DATA, DS, IS, OS> Csl<DA, DS, IS, OS>
-where
-  DA: Dims,
-  DS: AsRef<[DATA]> + Push<Input = DATA> + Storage<Item = DATA>,
-  IS: AsRef<[usize]> + Push<Input = usize>,
-  OS: AsRef<[usize]> + Push<Input = usize>,
-{
-  /// See [`CslLineConstructor`](CslLineConstructor) for more information.
-  pub fn constructor(&mut self) -> CslLineConstructor<'_, DA, DS, IS, OS> {
-    CslLineConstructor::new(self)
   }
 }
 
@@ -655,108 +742,5 @@ where
     let max_nnz = max_nnz(&dims);
     let nnz = if max_nnz == 0 { 0 } else { rng.gen_range(0, max_nnz) };
     Self::new_controlled_random_with_rand(dims, nnz, rng, |rng, _| rng.gen())
-  }
-}
-
-impl<DA, DS, IS, OS> Csl<DA, DS, IS, OS>
-where
-  DA: Dims,
-  DS: Clear,
-  IS: Clear,
-  OS: Clear,
-{
-  /// Clears all values and dimensions.
-  ///
-  /// # Example
-  ///
-  #[cfg_attr(feature = "alloc", doc = "```rust")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
-  /// use ndsparse::{csl::CslVec, doc_tests::csl_vec_4};
-  /// let mut csl = csl_vec_4();
-  /// csl.clear();
-  /// assert_eq!(csl, CslVec::default());
-  /// ```
-  pub fn clear(&mut self) {
-    self.dims = Default::default();
-    self.data.clear();
-    self.indcs.clear();
-    self.offs.clear();
-  }
-}
-
-impl<DATA, DA, DS, IS, OS> Csl<DA, DS, IS, OS>
-where
-  DA: Dims,
-  DS: AsMut<[DATA]> + AsRef<[DATA]> + Storage<Item = DATA>,
-  IS: AsRef<[usize]>,
-  OS: AsRef<[usize]>,
-{
-  /// Intra-swap a single data value.
-  ///
-  /// # Arguments
-  ///
-  /// * `a`: First set of indices
-  /// * `b`: Second set of indices
-  ///
-  /// # Example
-  ///
-  #[cfg_attr(feature = "alloc", doc = "```rust")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
-  /// use ndsparse::doc_tests::csl_vec_4;
-  /// let mut csl = csl_vec_4();
-  /// csl.swap_value([0, 0, 0, 0], [1, 0, 2, 2]);
-  /// assert_eq!(csl.data(), &[9, 2, 3, 4, 5, 6, 7, 8, 1]);
-  /// ```
-  ///
-  /// # Assertions
-  ///
-  /// Uses the same assertions of [`value`](#method.value).
-  pub fn swap_value(&mut self, a: DA, b: DA) -> bool {
-    assert!(a.slice()[..] < self.dims[..] && b.slice()[..] < self.dims[..]);
-    if let Some(a_idx) = data_idx(self, a) {
-      if let Some(b_idx) = data_idx(self, b) {
-        self.data.as_mut().swap(a_idx, b_idx);
-        return true;
-      }
-    }
-    false
-  }
-}
-
-impl<DA, DS, IS, OS> Csl<DA, DS, IS, OS>
-where
-  DA: Dims,
-  DS: Truncate<Input = usize>,
-  IS: Truncate<Input = usize>,
-  OS: AsRef<[usize]> + Push<Input = usize> + Truncate<Input = usize>,
-{
-  /// Truncates all values in the exactly exclusive point defined by `indcs`.
-  ///
-  /// # Example
-  ///
-  #[cfg_attr(feature = "alloc", doc = "```rust")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
-  /// use ndsparse::{csl::CslVec, doc_tests::csl_vec_4};
-  /// let mut csl = csl_vec_4();
-  /// csl.truncate([0, 0, 3, 4]);
-  /// assert_eq!(
-  ///   csl,
-  ///   CslVec::new([0, 0, 4, 5], vec![1, 2, 3, 4], vec![0, 3, 1, 3], vec![0, 2, 3, 3, 4])
-  /// );
-  /// ```
-  pub fn truncate(&mut self, indcs: DA) {
-    if let Some([offs_indcs, values]) = line_offs(&self.dims, &indcs, self.offs.as_ref()) {
-      let cut_point = values.start + 1;
-      self.data.truncate(cut_point);
-      self.indcs.truncate(cut_point);
-      self.offs.truncate(offs_indcs.start + 1);
-      self.offs.push(*indcs.slice().last().unwrap());
-      indcs
-        .slice()
-        .iter()
-        .zip(self.dims.slice_mut().iter_mut())
-        .filter(|(a, _)| **a == 0)
-        .for_each(|(_, b)| *b = 0);
-    }
   }
 }
