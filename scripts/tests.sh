@@ -4,9 +4,6 @@
 
 test_package_with_feature "ndsparse" "alloc"
 test_package_with_feature "ndsparse" "std"
-test_package_with_feature "ndsparse" "with-arrayvec"
 test_package_with_feature "ndsparse" "with-rand"
 test_package_with_feature "ndsparse" "with-rayon"
 test_package_with_feature "ndsparse" "with-serde"
-test_package_with_feature "ndsparse" "with-smallvec"
-test_package_with_feature "ndsparse" "with-tinyvec"

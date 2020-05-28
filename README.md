@@ -61,7 +61,6 @@ fn main() {
 - Constant generics
 - Bindings (Py03, wasm-bindgen)
 - Deserialization/Serialization (serde)
-- Dynamic arrays (ArrayVec, SmallVec, StaticVec and TinyVec)
 - Parallel iterators (rayon)
 - Random instances (rand)
 

@@ -21,27 +21,6 @@ pub type CooRef<'a, DA, DATA> = Coo<DA, &'a [(ArrayWrapper<DA>, DATA)]>;
 /// COO backed by a dynamic vector.
 pub type CooVec<DA, DATA> = Coo<DA, Vec<(ArrayWrapper<DA>, DATA)>>;
 
-/// COO backed by the `ArrayVec` dependency.
-#[cfg(feature = "with-arrayvec")]
-pub type CooArrayVec<DA, DTA> = Coo<DA, arrayvec::ArrayVec<cl_traits::ArrayWrapper<DTA>>>;
-
-/// COO backed by the `SmallVec` dependency.
-#[cfg(feature = "with-smallvec")]
-pub type CooSmallVec<DA, DTA> = Coo<DA, smallvec::SmallVec<cl_traits::ArrayWrapper<DTA>>>;
-
-/// COO backed by the `StaticVec` dependency
-#[cfg(feature = "with-staticvec")]
-pub type CooStaticVec<DATA, const DIMS: usize, const NNZ: usize> =
-  Coo<[usize; DIMS], staticvec::StaticVec<(ArrayWrapper<[usize; DIMS]>, DATA), NNZ>>;
-
-/// CSL backed by the `TinyVec` structure from the `tinyvec` dependency
-#[cfg(all(feature = "aloc", feature = "with-tinyvec"))]
-pub type CooTinyVec<DA, DTA> = Coo<DA, tinyvec::TinyVec<cl_traits::ArrayWrapper<DTA>>>;
-
-#[cfg(feature = "with-tinyvec")]
-/// CSL backed by the `ArrayVec` structure from the `tinyvec` dependency
-pub type CooTinyVecArrayVec<DA, DTA> = Coo<DA, tinyvec::ArrayVec<cl_traits::ArrayWrapper<DTA>>>;
-
 /// Base structure for all COO* variants.
 ///
 /// # Types

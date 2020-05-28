@@ -8,6 +8,5 @@ check_package_generic "ndsparse-bindings"
 test_package_generic "ndsparse"
 
 test_package_with_feature "ndsparse" "const-generics"
-test_package_with_feature "ndsparse" "with-staticvec"
 
 run_package_example "examples" "dynamic_arrays"

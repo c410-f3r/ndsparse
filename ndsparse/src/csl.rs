@@ -44,51 +44,6 @@ pub type CslRef<'a, DA, DATA> = Csl<DA, &'a [DATA], &'a [usize], &'a [usize]>;
 #[cfg(feature = "alloc")]
 pub type CslVec<DA, DATA> = Csl<DA, Vec<DATA>, Vec<usize>, Vec<usize>>;
 
-/// CSL backed by the `ArrayVec` dependency.
-#[cfg(feature = "with-arrayvec")]
-pub type CslArrayVec<DA, DTA, IA, OA> = Csl<
-  DA,
-  arrayvec::ArrayVec<cl_traits::ArrayWrapper<DTA>>,
-  arrayvec::ArrayVec<cl_traits::ArrayWrapper<IA>>,
-  arrayvec::ArrayVec<cl_traits::ArrayWrapper<OA>>,
->;
-
-/// CSL backed by the `smallvec` dependency.
-#[cfg(feature = "with-smallvec")]
-pub type CslSmallVec<DA, DTA, IA, OA> = Csl<
-  DA,
-  smallvec::SmallVec<cl_traits::ArrayWrapper<DTA>>,
-  smallvec::SmallVec<cl_traits::ArrayWrapper<IA>>,
-  smallvec::SmallVec<cl_traits::ArrayWrapper<OA>>,
->;
-
-/// CSL backed by the `staticvec` dependency
-#[cfg(feature = "with-staticvec")]
-pub type CslStaticVec<DATA, const DIMS: usize, const NNZ: usize, const OFFS: usize> = Csl<
-  [usize; DIMS],
-  staticvec::StaticVec<DATA, NNZ>,
-  staticvec::StaticVec<usize, NNZ>,
-  staticvec::StaticVec<usize, OFFS>,
->;
-
-/// CSL backed by the `TinyVec` structure from the `tinyvec` dependency
-#[cfg(all(feature = "aloc", feature = "with-tinyvec"))]
-pub type CslTinyVec<DA, DTA, IA, OA> = Csl<
-  DA,
-  tinyvec::TinyVec<cl_traits::ArrayWrapper<DTA>>,
-  tinyvec::TinyVec<cl_traits::ArrayWrapper<IA>>,
-  tinyvec::TinyVec<cl_traits::ArrayWrapper<OA>>,
->;
-
-/// CSL backed by the `ArrayVec` structure from the `tinyvec` dependency
-#[cfg(feature = "with-tinyvec")]
-pub type CslTinyVecArrayVec<DA, DTA, IA, OA> = Csl<
-  DA,
-  tinyvec::ArrayVec<cl_traits::ArrayWrapper<DTA>>,
-  tinyvec::ArrayVec<cl_traits::ArrayWrapper<IA>>,
-  tinyvec::ArrayVec<cl_traits::ArrayWrapper<OA>>,
->;
-
 /// Base structure for all CSL* variants.
 ///
 /// It is possible to define your own fancy CSL, e.g.,
