@@ -1,5 +1,5 @@
 use crate::{
-  csl::{CsIterRef, CslIterMut, CslMut, CslRef},
+  csl::{CslLineIterMut, CslLineIterRef, CslMut, CslRef},
   Dims, ParallelIteratorWrapper, ParallelProducerWrapper,
 };
 use rayon::iter::{
@@ -66,8 +66,8 @@ macro_rules! create_rayon_iter {
 
     impl<'a, DA, T> Producer for ParallelProducerWrapper<$csl_rayon_iter<'a, DA, T>>
     where
-      DA: Dims,
-      T: 'a,
+      DA: Dims + Send,
+      T: Send + Sync + 'a,
     {
       type IntoIter = $csl_rayon_iter<'a, DA, T>;
       type Item = <Self::IntoIter as Iterator>::Item;
@@ -84,5 +84,5 @@ macro_rules! create_rayon_iter {
   };
 }
 
-create_rayon_iter!(CsIterRef, CslRef);
-create_rayon_iter!(CslIterMut, CslMut);
+create_rayon_iter!(CslLineIterRef, CslRef);
+create_rayon_iter!(CslLineIterMut, CslMut);

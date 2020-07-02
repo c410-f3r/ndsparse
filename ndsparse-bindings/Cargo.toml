@@ -1,8 +1,8 @@
 [dependencies]
-cl-traits = "2.0"
-ndsparse = { features = ["alloc"], path = "../ndsparse" }
-pyo3 = { features = ["extension-module"], optional = true, version = "0.9" }
-wasm-bindgen = { optional = true, version = "0.2" }
+cl-traits = { default-features = false, version = "4.0" }
+ndsparse = { default-features = false, features = ["alloc"], path = "../ndsparse" }
+pyo3 = { default-features = false, features = ["extension-module", "macros"], optional = true, version = "0.10" }
+wasm-bindgen = { default-features = false, features = ["std"], optional = true, version = "0.2" }
 
 [features]
 default = []
@@ -14,6 +14,7 @@ crate-type = ["cdylib"]
 
 [package]
 edition = "2018"
+license = "Apache-2.0"
 name = "ndsparse-bindings"
 publish = false
 version = "0.0.0"

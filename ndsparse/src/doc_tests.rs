@@ -51,9 +51,9 @@ type CooArray5 = CooArray<[usize; 5], [(ArrayWrapper<[usize; 5]>, i32); 7]>;
 /// );
 /// ```
 pub fn coo_array_5() -> CooArray5 {
-  CooArray::new(
-    [2, 3, 4, 3, 3],
-    [
+  CooArray {
+    dims: [2, 3, 4, 3, 3].into(),
+    data: [
       ([0, 0, 1, 1, 2].into(), 1),
       ([0, 1, 0, 1, 1].into(), 2),
       ([0, 1, 3, 0, 0].into(), 3),
@@ -61,15 +61,16 @@ pub fn coo_array_5() -> CooArray5 {
       ([1, 1, 0, 2, 1].into(), 5),
       ([1, 2, 3, 0, 2].into(), 6),
       ([1, 2, 3, 2, 2].into(), 7),
-    ],
-  )
+    ]
+    .into(),
+  }
 }
 
-/// [`Vec`] version of [`coo_array_5`].
+/// [`Vec`](alloc::vec::Vec) version of [`coo_array_5`].
 #[cfg(feature = "alloc")]
 pub fn coo_vec_5() -> CooVec<[usize; 5], i32> {
   let coo = coo_array_5();
-  CooVec::new(coo.dims, coo.data.to_vec())
+  CooVec { dims: coo.dims, data: coo.data.to_vec() }
 }
 
 /// Two cuboids illustrating a [2, 3, 4, 5] 4D in a [w, y, z, x] order, i.e., each "line"
@@ -103,17 +104,22 @@ pub fn coo_vec_5() -> CooVec<[usize; 5], i32> {
 /// );
 /// ```
 pub fn csl_array_4() -> CslArray<[usize; 4], [i32; 9], [usize; 9], [usize; 25]> {
-  CslArray::new(
-    [2, 3, 4, 5],
-    [1, 2, 3, 4, 5, 6, 7, 8, 9],
-    [0, 3, 1, 3, 4, 2, 2, 4, 2],
-    [0, 2, 3, 3, 5, 6, 6, 6, 6, 7, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
-  )
+  CslArray {
+    data: [1, 2, 3, 4, 5, 6, 7, 8, 9].into(),
+    dims: [2, 3, 4, 5].into(),
+    indcs: [0, 3, 1, 3, 4, 2, 2, 4, 2].into(),
+    offs: [0, 2, 3, 3, 5, 6, 6, 6, 6, 7, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9].into(),
+  }
 }
 
-/// [`Vec`] version of [`csl_array_4`].
+/// [`Vec`](alloc::vec::Vec) version of [`csl_array_4`].
 #[cfg(feature = "alloc")]
 pub fn csl_vec_4() -> CslVec<[usize; 4], i32> {
   let csl = csl_array_4();
-  CslVec::new(csl.dims, csl.data.to_vec(), csl.indcs.to_vec(), csl.offs.to_vec())
+  CslVec {
+    data: csl.data.to_vec(),
+    dims: csl.dims,
+    indcs: csl.indcs.to_vec(),
+    offs: csl.offs.to_vec(),
+  }
 }

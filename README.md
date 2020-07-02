@@ -12,7 +12,7 @@ For those that might be wondering about why this crate should be used, it genera
 
 ```rust
 let _vec_of_options: Vec<Option<i32>> = Default::default();
-let _matrix_of_options: [Option<Option<[Option<i32>; 8]>>; 16] = Default::default();
+let _matrix_of_options: [Option<[Option<i32>; 8]>; 16] = Default::default();
 let _cube_of_vecs: Vec<Vec<Vec<i32>>> = Default::default();
 // The list worsens exponentially for higher dimensions
 ```
@@ -24,7 +24,7 @@ See [this blog post](https://c410-f3r.github.io/posts/sparse-multidimensional-st
 ```rust
 use ndsparse::{coo::CooArray, csl::CslVec};
 
-fn main() {
+fn main() -> ndsparse::Result<()> {
   // A CSL and COO cube.
   //
   //      ___ ___
@@ -34,19 +34,20 @@ fn main() {
   // /_1_/___/ /\/
   // \_1_\___\/ /
   //  \___\___\/
-  let coo = CooArray::new([2, 2, 2], [([0, 0, 0].into(), 1.0), ([1, 1, 1].into(), 2.0)]);
+  let coo = CooArray::new([2, 2, 2], [([0, 0, 0].into(), 1.0), ([1, 1, 1].into(), 2.0)])?;
   let mut csl = CslVec::default();
   csl
-    .constructor()
-    .next_outermost_dim(2)
-    .push_line(&[1.0], &[0])
-    .next_outermost_dim(2)
+    .constructor()?
+    .next_outermost_dim(2)?
+    .push_line([(0, 1.0)].iter().copied())?
+    .next_outermost_dim(2)?
     .push_empty_line()
-    .next_outermost_dim(2)
+    .next_outermost_dim(2)?
     .push_empty_line()
-    .push_line(&[2.0], &[1]);
+    .push_line([(1, 2.0)].iter().copied())?;
   assert_eq!(coo.value([0, 0, 0]), csl.value([0, 0, 0]));
   assert_eq!(coo.value([1, 1, 1]), csl.value([1, 1, 1]));
+  Ok(())
 }
 ```
 
@@ -54,6 +55,14 @@ fn main() {
 
 - Compressed Sparse Line (CSL)
 - Coordinate format (COO)
+
+## Features
+
+- `no_std` w/o opt-out flags
+- Different storages (Array, Vec, Slice and more!)
+- Fully documented
+- Fuzz testing
+- No unsafe
 
 ## Optional features
 
@@ -66,7 +75,7 @@ fn main() {
 
 ## Nightly compiler
 
-If dimensions or array storages with more than 32 elements are needed, then it is necessary to include the `const-generics` feature that is only available when using a nightly Rustc compiler.
+If dimensions or array storages with arbitrary length are needed, then it is necessary to include the `const-generics` feature that is only available when using a nightly Rustc compiler.
 
 ## Future
 

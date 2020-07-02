@@ -7,10 +7,10 @@
 //! [`CSC`]: en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_column_(CSC_or_CCS)
 //! [`CSR`]: en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)
 
-mod csl_iter;
+mod csl_error;
 mod csl_line_constructor;
-#[cfg(all(test, feature = "alloc", feature = "with-rand"))]
-mod csl_quickcheck;
+mod csl_line_iter;
+
 #[cfg(feature = "with-rayon")]
 mod csl_rayon;
 mod csl_utils;
@@ -18,18 +18,17 @@ mod csl_utils;
 #[cfg(feature = "with-rand")]
 mod csl_rnd;
 use crate::{
-  utils::{are_in_ascending_order, are_in_upper_bound, does_not_have_duplicates, max_nnz},
+  utils::{are_in_ascending_order, are_in_upper_bound, has_duplicates, max_nnz, windows2},
   Dims,
 };
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use cl_traits::{ArrayWrapper, Clear, Push, Storage, Truncate, WithCapacity};
 use core::ops::Range;
-pub use csl_iter::*;
-pub use csl_line_constructor::*;
 #[cfg(feature = "with-rayon")]
 pub use csl_rayon::*;
 use csl_utils::*;
+pub use {csl_error::*, csl_line_constructor::*, csl_line_iter::*};
 
 /// CSL backed by a static array.
 pub type CslArray<DA, DTA, IA, OA> = Csl<DA, ArrayWrapper<DTA>, ArrayWrapper<IA>, ArrayWrapper<OA>>;
@@ -46,17 +45,21 @@ pub type CslVec<DA, DATA> = Csl<DA, Vec<DATA>, Vec<usize>, Vec<usize>>;
 
 /// Base structure for all CSL* variants.
 ///
-/// It is possible to define your own fancy CSL, e.g.,
-/// `Csl<[BigNum; 32], ArrayVec<[usize; 32]>, StaticVec<usize, 123>, 321>`.
+/// It is possible to define your own fancy CSL, e.g., `Csl<
+///   [usize; 123],
+///   staticvec::StaticVec<num_bigint::BigNum, 32>,
+///   arrayvec::ArrayVec<[usize; 32]>,
+///   smallvec::SmallVec<[usize; 321]>
+/// >`.
 ///
 /// # Types
 ///
+/// * `DA`: Dimensions Array
 /// * `DS`: Data Storage
 /// * `IS`: Indices Storage
 /// * `OS`: Offsets Storage
-/// * `const DIMS: usize`: Dimensions length
 #[cfg_attr(feature = "with-serde", derive(serde::Deserialize, serde::Serialize))]
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Csl<DA, DS, IS, OS>
 where
   DA: Dims,
@@ -85,7 +88,6 @@ where
   /// (without the innermost dimension) plus 1
   ///
   /// # Example
-  ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::csl::CslVec;
@@ -143,76 +145,21 @@ where
   /// * `into_offs`: Offset of each innermost line
   ///
   /// # Example
-  ///
   #[cfg_attr(all(feature = "alloc", feature = "const-generics"), doc = "```rust")]
   #[cfg_attr(not(all(feature = "alloc", feature = "const-generics")), doc = "```ignore")]
   /// use ndsparse::csl::{CslArray, CslVec};
   /// // Sparse array ([8, _, _, _, _, 9, _, _, _, _])
   /// let mut _sparse_array = CslArray::new([10], [8.0, 9.0], [0, 5], [0, 2]);
   /// // A bunch of nothing for your overflow needs
-  /// let mut _over_nine: CslVec<[usize; 9001], ()>;
+  /// let mut _over_nine: ndsparse::Result<CslVec<[usize; 9001], ()>>;
   /// _over_nine = CslVec::new([0; 9001], vec![], vec![], vec![]);
-  /// ```
-  ///
-  /// # Assertions
-  ///
-  /// * Innermost dimensions length must be greater than zero
-  #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
-  /// use ndsparse::csl::CslVec;
-  /// let _: CslVec<[usize; 7], i32> = CslVec::new([1, 2, 3, 4, 5, 0, 7], vec![], vec![], vec![]);
-  /// ```
-  ///
-  /// * The data length must equal the indices length
-  #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
-  /// use ndsparse::csl::CslVec;
-  /// let _ = CslVec::new([10], vec![8, 9], vec![0], vec![0, 2]);
-  /// ```
-  ///
-  /// * Offsets must be in ascending order
-  /// ```rust,should_panic
-  /// use ndsparse::csl::CslArray;
-  /// let _ = CslArray::new([10], [8, 9], [0, 5], [2, 0]);
-  /// ```
-  ///
-  /// * Offsets length must equal the dimensions product (without the innermost dimension) plus one
-  #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
-  /// use ndsparse::csl::CslVec;
-  /// let _ = CslVec::new([10], vec![8, 9], vec![0, 5], vec![0, 2, 4]);
-  /// ```
-  ///
-  /// * Indices of a line must be unique
-  /// ```rust,should_panic
-  /// use ndsparse::csl::CslArray;
-  /// let _ = CslArray::new([10], [8, 9], [0, 0], [0, 2]);
-  /// ```
-  ///
-  /// * The data and indices length must be equal or less than the product of all dimensions length
-  #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
-  /// use ndsparse::csl::CslVec;
-  /// let _ = CslVec::new([10], vec![8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9], vec![0, 5], vec![0, 2]);
-  /// ```
-  ///
-  /// * Last offset must equal the nnz
-  /// ```rust,should_panic
-  /// use ndsparse::csl::CslArray;
-  /// let _ = CslArray::new([10], [8, 9], [0, 5], [0, 4]);
-  /// ```
-  ///
-  /// * The indices must be less than the innermost dimension length
-  /// ```rust,should_panic
-  /// use ndsparse::csl::CslArray;
-  /// let _ = CslArray::new([10], [8, 9], [0, 10], [0, 2]);
   /// ```
   pub fn new<ID, IDS, IIS, IOS>(
     into_dims: ID,
     into_data: IDS,
     into_indcs: IIS,
     into_offs: IOS,
-  ) -> Self
+  ) -> crate::Result<Self>
   where
     ID: Into<ArrayWrapper<DA>>,
     IDS: Into<DS>,
@@ -226,48 +173,71 @@ where
     let data_ref = data.as_ref();
     let indcs_ref = indcs.as_ref();
     let offs_ref = offs.as_ref();
-    assert!(
-      {
-        let mut is_valid = true;
-        if let Some(idx) = dims.slice().iter().position(|dim| *dim != 0) {
-          is_valid = dims[idx..].iter().all(|dim| *dim != 0);
+
+    let innermost_dim_is_zero = {
+      let mut iter = dims.slice().iter().copied();
+      while let Some(dim) = iter.next() {
+        if dim != 0 {
+          break;
         }
-        is_valid
-      },
-      "Innermost dimensions length must be greater than zero"
-    );
-    assert!(data_ref.len() == indcs_ref.len(), "The data length must equal the indices length");
-    assert!(are_in_ascending_order(&offs_ref, |a, b| [a, b]), "Offsets must be in ascending order");
-    assert!(
-      {
-        let max_nnz = max_nnz(&dims);
-        data_ref.len() <= max_nnz && indcs_ref.len() <= max_nnz
-      },
-      "The data and indices length must be equal or less than the product of all dimensions length"
-    );
-    if let Some(first) = offs_ref.get(0) {
-      assert!(
-        offs_ref.windows(2).all(|x| {
-          let range = x[0] - first..x[1] - first;
-          does_not_have_duplicates(&indcs_ref[range])
-        }),
-        "Indices of a line must be unique"
-      );
+      }
+      iter.any(|v| v == 0)
+    };
+    if innermost_dim_is_zero {
+      return Err(CslError::InnermostDimsZero.into());
     }
-    if let Some(last_ref) = offs_ref.last() {
-      let last = last_ref - offs_ref[0];
-      assert!(last == data_ref.len() && last == indcs_ref.len(), "Last offset must equal the nnz");
+
+    if data_ref.len() != indcs_ref.len() {
+      return Err(CslError::DiffDataIndcsLength.into());
     }
+
+    if !are_in_ascending_order(&offs_ref, |a, b| [a, b]) {
+      return Err(CslError::InvalidOffsetsOrder.into());
+    }
+
+    let data_indcs_length_greater_than_dims_length = {
+      let max_nnz = max_nnz(&dims);
+      data_ref.len() > max_nnz || indcs_ref.len() > max_nnz
+    };
+    if data_indcs_length_greater_than_dims_length {
+      return Err(CslError::DataIndcsLengthGreaterThanDimsLength.into());
+    }
+
     if let Some(last) = dims.slice().last() {
       let are_in_upper_bound = are_in_upper_bound(indcs_ref, last);
-      assert!(are_in_upper_bound, "The indices must be less than the innermost dimension length");
-      assert!(
-        offs_ref.len() == offs_len(&dims),
-        "Non-empty offsets length must equal the dimensions product (without the innermost \
-         dimension) plus one"
-      );
+      if !are_in_upper_bound {
+        return Err(CslError::IndcsGreaterThanEqualDimLength.into());
+      }
+      if offs_ref.len() != correct_offs_len(&dims)? {
+        return Err(CslError::InvalidOffsetsLength.into());
+      }
     }
-    Self { data, dims, indcs, offs }
+
+    let first_off = if let Some(r) = offs_ref.first() {
+      r
+    } else {
+      return Ok(Self { data, dims, indcs, offs });
+    };
+
+    if let Some(last_ref) = offs_ref.last() {
+      let last = last_ref - first_off;
+      if last != data_ref.len() || last != indcs_ref.len() {
+        return Err(CslError::LastOffsetDifferentNnz.into());
+      }
+    }
+
+    let has_duplicated_indices = windows2(offs_ref).any(|[a, b]| {
+      if let Some(indcs) = indcs_ref.get(a - first_off..b - first_off) {
+        has_duplicates(indcs)
+      } else {
+        false
+      }
+    });
+    if has_duplicated_indices {
+      return Err(CslError::DuplicatedIndices.into());
+    }
+
+    Ok(Self { data, dims, indcs, offs })
   }
 
   /// The data that is being stored.
@@ -301,8 +271,8 @@ where
   /// ```rust
   /// use ndsparse::{csl::CslRef, doc_tests::csl_array_4};
   /// let csl = csl_array_4();
-  /// assert_eq!(csl.line([0, 0, 2, 0]), Some(CslRef::new([5], &[][..], &[][..], &[3, 3][..])));
-  /// assert_eq!(csl.line([0, 1, 0, 0]), Some(CslRef::new([5], &[6][..], &[2][..], &[5, 6][..])));
+  /// assert_eq!(csl.line([0, 0, 2, 0]), CslRef::new([5], &[][..], &[][..], &[3, 3][..]).ok());
+  /// assert_eq!(csl.line([0, 1, 0, 0]), CslRef::new([5], &[6][..], &[2][..], &[5, 6][..]).ok());
   /// ```
   pub fn line(&self, indcs: DA) -> Option<CslRef<'_, [usize; 1], DATA>> {
     line(self, indcs)
@@ -337,74 +307,58 @@ where
     self.offs.as_ref()
   }
 
-  /// Iterator that returns immutable references of the outermost dimension
+  /// Iterator that returns immutable line references of the outermost dimension
   ///
   /// # Examples
   ///
   /// ```rust
+  /// # fn main() -> ndsparse::Result<()> {
   /// use ndsparse::{csl::CslRef, doc_tests::csl_array_4};
   /// let csl = csl_array_4();
-  /// let sub_csl = csl.sub_dim(0..3);
-  /// let mut iter = sub_csl.outermost_iter();
+  /// let sub_csl = csl.sub_dim(0..3).unwrap();
+  /// let mut iter = sub_csl.outermost_line_iter()?;
   /// assert_eq!(
-  ///   iter.next().unwrap(),
-  ///   CslRef::new([1, 4, 5], &[1, 2, 3, 4, 5][..], &[0, 3, 1, 3, 4][..], &[0, 2, 3, 3, 5][..])
+  ///   iter.next(),
+  ///   CslRef::new([1, 4, 5], &[1, 2, 3, 4, 5][..], &[0, 3, 1, 3, 4][..], &[0, 2, 3, 3, 5][..]).ok()
   /// );
+  /// assert_eq!(iter.next(), CslRef::new([1, 4, 5], &[6][..], &[2][..], &[5, 6, 6, 6, 6][..]).ok());
   /// assert_eq!(
-  ///   iter.next().unwrap(),
-  ///   CslRef::new([1, 4, 5], &[6][..], &[2][..], &[5, 6, 6, 6, 6][..])
-  /// );
-  /// assert_eq!(
-  ///   iter.next().unwrap(),
-  ///   CslRef::new([1, 4, 5], &[7, 8][..], &[2, 4][..], &[6, 7, 8, 8, 8][..])
+  ///   iter.next(),
+  ///   CslRef::new([1, 4, 5], &[7, 8][..], &[2, 4][..], &[6, 7, 8, 8, 8][..]).ok()
   /// );
   /// assert_eq!(iter.next(), None);
-  /// ```
-  ///
-  /// # Assertions
-  ///
-  /// * `DIMS` must be greater than 1
-  /// ```rust,should_panic
-  /// use ndsparse::csl::CslArray;
-  /// let _ = CslArray::<[usize; 0], [i32; 1], [usize; 1], [usize; 2]>::default().outermost_iter();
-  /// ```
-  pub fn outermost_iter(&self) -> CsIterRef<'_, DA, DATA> {
-    CsIterRef::new(&self.dims, self.data.as_ref().as_ptr(), self.indcs.as_ref(), self.offs.as_ref())
+  /// # Ok(()) }
+  pub fn outermost_line_iter(&self) -> crate::Result<CslLineIterRef<'_, DA, DATA>> {
+    CslLineIterRef::new(self.dims, self.data.as_ref(), self.indcs.as_ref(), self.offs.as_ref())
   }
 
-  /// Parallel iterator that returns all immutable references of the current dimension
+  /// Parallel iterator that returns all immutable line references of the current dimension
   /// using `rayon`.
   ///
   /// # Examples
-  ///
-  /// ```rust,
+  #[cfg_attr(all(feature = "alloc", feature = "with-rayon"), doc = "```rust")]
+  #[cfg_attr(not(all(feature = "alloc", feature = "with-rayon")), doc = "```ignore")]
+  /// # fn main() -> ndsparse::Result<()> {
   /// use ndsparse::doc_tests::csl_array_4;
   /// use rayon::prelude::*;
   /// let csl = csl_array_4();
-  /// let outermost_rayon_iter = csl.outermost_rayon_iter();
+  /// let outermost_rayon_iter = csl.outermost_line_rayon_iter()?;
   /// outermost_rayon_iter.enumerate().for_each(|(idx, csl_ref)| {
-  ///   assert_eq!(csl_ref, csl.outermost_iter().nth(idx).unwrap());
+  ///   assert_eq!(csl_ref, csl.outermost_line_iter().unwrap().nth(idx).unwrap());
   /// });
-  /// ```
-  ///
-  /// # Assertions
-  ///
-  /// * `DIMS` must be greater than 1
-  /// ```rust,should_panic
-  /// use ndsparse::csl::CslArray;
-  /// let _csl = CslArray::<[usize; 0], [i32; 1], [usize; 1], [usize; 2]>::default();
-  /// _csl.outermost_rayon_iter();
+  /// # Ok(()) }
   /// ```
   #[cfg(feature = "with-rayon")]
-  pub fn outermost_rayon_iter(&self) -> crate::ParallelIteratorWrapper<CsIterRef<'_, DA, DATA>> {
-    crate::ParallelIteratorWrapper(self.outermost_iter())
+  pub fn outermost_line_rayon_iter(
+    &self,
+  ) -> crate::Result<crate::ParallelIteratorWrapper<CslLineIterRef<'_, DA, DATA>>> {
+    Ok(crate::ParallelIteratorWrapper(self.outermost_line_iter()?))
   }
 
   /// Retrieves an immutable reference of any sub dimension.
   ///
   /// # Arguments
   ///
-  /// * `const N`: Desired dimension
   /// * `range`: Starting and ending of the desired dimension
   ///
   /// # Example
@@ -416,18 +370,18 @@ where
   /// assert_eq!(
   ///   csl.sub_dim(1..2),
   ///   CslRef::new([1, 3, 4, 5], &[9][..], &[2][..], &[8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9][..])
+  ///     .ok()
   /// );
   /// // The last 2 matrices of the first cuboid;
   /// assert_eq!(
   ///   csl.sub_dim(1..3),
-  ///   CslRef::new([2, 4, 5], &[6, 7, 8][..], &[2, 2, 4][..], &[5, 6, 6, 6, 6, 7, 8, 8, 8][..])
+  ///   CslRef::new([2, 4, 5], &[6, 7, 8][..], &[2, 2, 4][..], &[5, 6, 6, 6, 6, 7, 8, 8, 8][..]).ok()
   /// );
   /// ```
-  pub fn sub_dim<TODA>(&self, range: Range<usize>) -> CslRef<'_, TODA, DATA>
+  pub fn sub_dim<TODA>(&self, range: Range<usize>) -> Option<CslRef<'_, TODA, DATA>>
   where
     TODA: Dims,
   {
-    assert!(TODA::CAPACITY <= DA::CAPACITY);
     sub_dim(self, range)
   }
 
@@ -443,16 +397,9 @@ where
   /// use ndsparse::doc_tests::csl_array_4;
   /// assert_eq!(csl_array_4().value([1, 0, 2, 2]), Some(&9));
   /// ```
-  ///
-  /// # Assertions
-  ///
-  /// * `indcs` must be within dimensions bounds
-  /// ```rust,should_panic
-  /// use ndsparse::doc_tests::csl_array_4;
-  /// let _ = csl_array_4().value([9, 9, 9, 9]);
-  /// ```
   pub fn value(&self, indcs: DA) -> Option<&DATA> {
-    data_idx(self, indcs).map(|idx| &self.data.as_ref()[idx])
+    let idx = data_idx(self, indcs)?;
+    self.data.as_ref().get(idx)
   }
 }
 
@@ -466,7 +413,6 @@ where
   /// Clears all values and dimensions.
   ///
   /// # Example
-  ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::{csl::CslVec, doc_tests::csl_vec_4};
@@ -478,16 +424,17 @@ where
   where
     DS: Clear,
     IS: Clear,
-    OS: Clear,
+    OS: Clear + Push<Input = usize>,
   {
     self.dims = Default::default();
     self.data.clear();
     self.indcs.clear();
     self.offs.clear();
+    self.offs.push(0);
   }
 
   /// See [`CslLineConstructor`](CslLineConstructor) for more information.
-  pub fn constructor(&mut self) -> CslLineConstructor<'_, DA, DS, IS, OS>
+  pub fn constructor(&mut self) -> crate::Result<CslLineConstructor<'_, DA, DS, IS, OS>>
   where
     DS: Push<Input = DATA>,
     IS: Push<Input = usize>,
@@ -506,26 +453,21 @@ where
     line_mut(self, indcs)
   }
 
-  /// Mutable version of [`outermost_iter`](#method.outermost_iter).
-  pub fn outermost_iter_mut(&mut self) -> CslIterMut<'_, DA, DATA> {
-    CslIterMut::new(
-      &self.dims,
-      self.data.as_mut().as_mut_ptr(),
-      self.indcs.as_ref(),
-      self.offs.as_ref(),
-    )
+  /// Mutable version of [`outermost_line_iter`](#method.outermost_line_iter).
+  pub fn outermost_line_iter_mut(&mut self) -> crate::Result<CslLineIterMut<'_, DA, DATA>> {
+    CslLineIterMut::new(self.dims, self.data.as_mut(), self.indcs.as_ref(), self.offs.as_ref())
   }
 
-  /// Mutable version of [`outermost_rayon_iter`](#method.outermost_rayon_iter).
+  /// Mutable version of [`outermost_line_rayon_iter`](#method.outermost_line_rayon_iter).
   #[cfg(feature = "with-rayon")]
-  pub fn outermost_rayon_iter_mut(
+  pub fn outermost_line_rayon_iter_mut(
     &mut self,
-  ) -> crate::ParallelIteratorWrapper<CslIterMut<'_, DA, DATA>> {
-    crate::ParallelIteratorWrapper(self.outermost_iter_mut())
+  ) -> crate::Result<crate::ParallelIteratorWrapper<CslLineIterMut<'_, DA, DATA>>> {
+    Ok(crate::ParallelIteratorWrapper(self.outermost_line_iter_mut()?))
   }
 
   /// Mutable version of [`sub_dim`](#method.sub_dim).
-  pub fn sub_dim_mut<TODA>(&mut self, range: Range<usize>) -> CslMut<'_, TODA, DATA>
+  pub fn sub_dim_mut<TODA>(&mut self, range: Range<usize>) -> Option<CslMut<'_, TODA, DATA>>
   where
     TODA: Dims,
   {
@@ -540,7 +482,6 @@ where
   /// * `b`: Second set of indices
   ///
   /// # Example
-  ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::doc_tests::csl_vec_4;
@@ -548,12 +489,7 @@ where
   /// csl.swap_value([0, 0, 0, 0], [1, 0, 2, 2]);
   /// assert_eq!(csl.data(), &[9, 2, 3, 4, 5, 6, 7, 8, 1]);
   /// ```
-  ///
-  /// # Assertions
-  ///
-  /// Uses the same assertions of [`value`](#method.value).
   pub fn swap_value(&mut self, a: DA, b: DA) -> bool {
-    assert!(a.slice()[..] < self.dims[..] && b.slice()[..] < self.dims[..]);
     if let Some(a_idx) = data_idx(self, a) {
       if let Some(b_idx) = data_idx(self, b) {
         self.data.as_mut().swap(a_idx, b_idx);
@@ -566,14 +502,13 @@ where
   /// Truncates all values in the exactly exclusive point defined by `indcs`.
   ///
   /// # Example
-  ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::{csl::CslVec, doc_tests::csl_vec_4};
   /// let mut csl = csl_vec_4();
   /// csl.truncate([0, 0, 3, 4]);
   /// assert_eq!(
-  ///   csl,
+  ///   Ok(csl),
   ///   CslVec::new([0, 0, 4, 5], vec![1, 2, 3, 4], vec![0, 3, 1, 3], vec![0, 2, 3, 3, 4])
   /// );
   /// ```
@@ -584,24 +519,33 @@ where
     IS: Truncate<Input = usize>,
     OS: Push<Input = usize> + Truncate<Input = usize>,
   {
-    if let Some([offs_indcs, values]) = line_offs(&self.dims, &indcs, self.offs.as_ref()) {
-      let cut_point = values.start + 1;
-      self.data.truncate(cut_point);
-      self.indcs.truncate(cut_point);
-      self.offs.truncate(offs_indcs.start + 1);
-      self.offs.push(*indcs.slice().last().unwrap());
-      indcs
-        .slice()
-        .iter()
-        .zip(self.dims.slice_mut().iter_mut())
-        .filter(|(a, _)| **a == 0)
-        .for_each(|(_, b)| *b = 0);
-    }
+    let [offs_indcs, values] = if let Some(r) = line_offs(&self.dims, &indcs, self.offs.as_ref()) {
+      r
+    } else {
+      return;
+    };
+    let last_idx = if let Some(r) = indcs.slice().last() {
+      *r
+    } else {
+      return;
+    };
+    let cut_point = values.start.saturating_add(1);
+    self.data.truncate(cut_point);
+    self.indcs.truncate(cut_point);
+    self.offs.truncate(offs_indcs.start.saturating_add(1));
+    self.offs.push(last_idx);
+    indcs
+      .slice()
+      .iter()
+      .zip(self.dims.slice_mut().iter_mut())
+      .filter(|(a, _)| **a == 0)
+      .for_each(|(_, b)| *b = 0);
   }
 
   /// Mutable version of [`value`](#method.value).
   pub fn value_mut(&mut self, indcs: DA) -> Option<&mut DATA> {
-    data_idx(self, indcs).map(move |idx| &mut self.data.as_mut()[idx])
+    let idx = data_idx(self, indcs)?;
+    self.data.as_mut().get_mut(idx)
   }
 }
 
@@ -623,48 +567,30 @@ where
   /// * `cb`: Callback to control data creation
   ///
   /// # Example
-  ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::csl::CslVec;
   /// use rand::{thread_rng, Rng};
   /// let mut rng = thread_rng();
   /// let dims = [1, 2, 3, 4, 5, 6, 7, 8];
-  /// let mut _random: CslVec<[usize; 8], u8>;
-  /// _random = CslVec::new_controlled_random_with_rand(dims, 9, &mut rng, |r, _| r.gen());
+  /// let mut _random: ndsparse::Result<CslVec<[usize; 8], u8>>;
+  /// _random = CslVec::new_controlled_random_rand(dims, 9, &mut rng, |r, _| r.gen());
   /// ```
-  ///
-  /// # Assertions
-  ///
-  /// * `nnz` must be equal or less than the maximum number of non-zero elements
-  #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
-  /// use ndsparse::csl::CslVec;
-  /// use rand::{thread_rng, Rng};
-  /// let mut rng = thread_rng();
-  /// let dims = [1, 2, 3]; // Max of 6 elements (1 * 2 * 3)
-  /// let mut _random: CslVec<[usize; 3], u8>;
-  /// _random = CslVec::new_controlled_random_with_rand(dims, 7, &mut rng, |r, _| r.gen());
-  /// ```
-  pub fn new_controlled_random_with_rand<F, ID, R>(
+  pub fn new_controlled_random_rand<F, ID, R>(
     into_dims: ID,
     nnz: usize,
     rng: &mut R,
     cb: F,
-  ) -> Self
+  ) -> crate::Result<Self>
   where
     F: FnMut(&mut R, DA) -> DATA,
     ID: Into<ArrayWrapper<DA>>,
     R: rand::Rng,
   {
     let dims = into_dims.into();
-    assert!(
-      nnz <= max_nnz(&dims),
-      "`nnz` must be equal or less than the maximum number of non-zero elements"
-    );
     let mut csl = Self::default();
     csl.dims = dims;
-    csl_rnd::CslRnd::new(&mut csl, nnz, rng).fill(cb);
+    csl_rnd::CslRnd::new(&mut csl, nnz, rng)?.fill(cb)?;
     Self::new(csl.dims, csl.data, csl.indcs, csl.offs)
   }
 
@@ -678,17 +604,18 @@ where
   /// # Example
   ///
   /// # Example
-  ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
+  /// # fn main() -> ndsparse::Result<()> {
   /// use ndsparse::csl::CslVec;
   /// use rand::{seq::SliceRandom, thread_rng};
   /// let mut rng = thread_rng();
   /// let upper_bound = 5;
-  /// let random: CslVec<[usize; 8], u8> = CslVec::new_random_with_rand(&mut rng, upper_bound);
-  /// assert!(random.dims().choose(&mut rng).unwrap() < &upper_bound);
-  /// ```
-  pub fn new_random_with_rand<R>(rng: &mut R, upper_bound: usize) -> Self
+  /// let random: ndsparse::Result<CslVec<[usize; 8], u8>>;
+  /// random = CslVec::new_random_rand(&mut rng, upper_bound);
+  /// assert!(random?.dims().choose(&mut rng).unwrap() < &upper_bound);
+  /// # Ok(()) }
+  pub fn new_random_rand<R>(rng: &mut R, upper_bound: usize) -> crate::Result<Self>
   where
     R: rand::Rng,
     rand::distributions::Standard: rand::distributions::Distribution<DATA>,
@@ -696,6 +623,25 @@ where
     let dims = crate::utils::valid_random_dims(rng, upper_bound);
     let max_nnz = max_nnz(&dims);
     let nnz = if max_nnz == 0 { 0 } else { rng.gen_range(0, max_nnz) };
-    Self::new_controlled_random_with_rand(dims, nnz, rng, |rng, _| rng.gen())
+    Self::new_controlled_random_rand(dims, nnz, rng, |rng, _| rng.gen())
+  }
+}
+
+impl<DA, DS, IS, OS> Default for Csl<DA, DS, IS, OS>
+where
+  DA: Dims,
+  DS: Default,
+  IS: Default,
+  OS: Default + Push<Input = usize>,
+{
+  fn default() -> Self {
+    let mut offs: OS = Default::default();
+    offs.push(0);
+    Self {
+      data: Default::default(),
+      dims: ArrayWrapper::default(),
+      indcs: Default::default(),
+      offs,
+    }
   }
 }

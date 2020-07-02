@@ -17,7 +17,7 @@ where
   T: 'a,
   U: PartialOrd + 'a,
 {
-  slice.windows(2).all(|x| {
+  windows2(slice).all(|x| {
     let [a, b] = cb(&x[0], &x[1]);
     a <= b
   })
@@ -30,18 +30,18 @@ where
   slice.iter().all(|x| x < upper_bound)
 }
 
-pub fn does_not_have_duplicates<T>(slice: &[T]) -> bool
+pub fn has_duplicates<T>(slice: &[T]) -> bool
 where
   T: PartialEq,
 {
   for (a_idx, a) in slice.iter().enumerate() {
-    for b in slice.iter().skip(a_idx + 1) {
+    for b in slice.iter().skip(a_idx.saturating_add(1)) {
       if a == b {
-        return false;
+        return true;
       }
     }
   }
-  true
+  false
 }
 
 #[inline]
@@ -49,31 +49,50 @@ pub fn max_nnz<DA>(dims: &ArrayWrapper<DA>) -> usize
 where
   DA: Dims,
 {
-  match DA::CAPACITY {
-    0 => 0,
-    1 => dims[0],
-    _ if dims == &ArrayWrapper::default() => 0,
-    _ => dims.slice().iter().filter(|dim| **dim != 0).product::<usize>(),
+  if dims == &ArrayWrapper::default() {
+    return 0;
   }
+  if let Some(first) = dims.slice().first().copied() {
+    if DA::CAPACITY == 1 {
+      return first;
+    }
+
+    let mut product: usize = 1;
+    for dim in dims.slice().iter().copied().filter(|dim| dim != &0) {
+      product = product.saturating_mul(dim);
+    }
+    return product;
+  }
+  0
 }
 
 #[cfg(feature = "with-rand")]
-pub fn valid_random_dims<A: Dims, R: rand::Rng>(
-  rng: &mut R,
-  upper_bound: usize,
-) -> ArrayWrapper<A> {
-  let mut dims = ArrayWrapper::default();
-  match A::CAPACITY {
+pub fn valid_random_dims<A, R>(rng: &mut R, upper_bound: usize) -> ArrayWrapper<A>
+where
+  A: Dims,
+  R: rand::Rng,
+{
+  let dims = ArrayWrapper::default();
+  if A::CAPACITY == 0 {
+    return dims;
+  }
+  let cut_point = rng.gen_range(0, A::CAPACITY);
+  let mut array: A = *dims;
+  let iter = if let Some(r) = array.slice_mut().get_mut(cut_point..) {
+    r.iter_mut()
+  } else {
+    return dims;
+  };
+  match upper_bound {
     0 => {}
-    _ => {
-      let cut_point = rng.gen_range(0, A::CAPACITY);
-      let iter = (&mut *dims as &mut A).slice_mut()[cut_point..].iter_mut();
-      match upper_bound {
-        0 => {}
-        1 => iter.for_each(|dim| *dim = 1),
-        _ => iter.for_each(|dim| *dim = rng.gen_range(1, upper_bound)),
-      }
-    }
+    1 => iter.for_each(|dim| *dim = 1),
+    _ => iter.for_each(|dim| *dim = rng.gen_range(1, upper_bound)),
   }
   dims
+}
+
+#[inline]
+pub fn windows2<'a: 'b, 'b, T>(slice: &'a [T]) -> impl Iterator<Item = [&'b T; 2]> {
+  #[allow(clippy::indexing_slicing)]
+  slice.windows(2).map(|value| [&value[0], &value[1]])
 }

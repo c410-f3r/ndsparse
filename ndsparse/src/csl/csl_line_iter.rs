@@ -1,21 +1,20 @@
 use crate::{
-  csl::{outermost_offs, CslMut, CslRef},
+  csl::{outermost_offs, CslError, CslMut, CslRef},
   Dims,
 };
 use cl_traits::ArrayWrapper;
-use core::slice::{from_raw_parts, from_raw_parts_mut};
+use core::mem;
 
 macro_rules! impl_iter {
-  ($csl_iter:ident, $data_ptr:ty, $data_type:ty, $from_raw_parts:ident, $ref:ident) => {
+  ($csl_iter:ident, $data_type:ty, $split_at:ident, $ref:ident) => {
     /// Iterator of a CSL dimension.
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct $csl_iter<'a, DA, T>
     where
       DA: Dims,
-      T: 'a,
     {
       curr_idx: usize,
-      data: $data_ptr,
+      data: $data_type,
       dims: ArrayWrapper<DA>,
       indcs: &'a [usize],
       max_idx: usize,
@@ -27,35 +26,40 @@ macro_rules! impl_iter {
       DA: Dims,
     {
       pub(crate) fn new(
-        orig_dims: &ArrayWrapper<DA>,
-        data: $data_ptr,
+        mut dims: ArrayWrapper<DA>,
+        data: $data_type,
         indcs: &'a [usize],
         offs: &'a [usize],
-      ) -> Self {
-        assert!(DA::CAPACITY > 1);
-        let mut dims = *orig_dims;
-        dims[0] = 1;
-        let max_idx = orig_dims[0];
-        $csl_iter { curr_idx: 0, data, dims, indcs, max_idx, offs }
+      ) -> crate::Result<Self> {
+        if let Some(r) = dims.slice_mut().first_mut() {
+          let max_idx = *r;
+          *r = 1;
+          Ok($csl_iter { curr_idx: 0, data, dims, indcs, max_idx, offs })
+        } else {
+          Err(CslError::InvalidIterDim.into())
+        }
       }
 
       #[cfg(feature = "with-rayon")]
       pub(crate) fn split_at(self, idx: usize) -> [Self; 2] {
         let cut_point = self.curr_idx + idx;
+        let [_, values] = outermost_offs(&self.dims, self.offs, self.curr_idx..cut_point);
+        let (data_head, data_tail) = self.data.$split_at(values.end - values.start);
+        let (indcs_head, indcs_tail) = self.indcs.split_at(values.end - values.start);
         [
           $csl_iter {
             curr_idx: self.curr_idx,
-            data: self.data,
+            data: data_head,
             dims: self.dims,
-            indcs: self.indcs,
+            indcs: indcs_head,
             max_idx: cut_point,
             offs: self.offs,
           },
           $csl_iter {
             curr_idx: cut_point,
-            data: self.data,
+            data: data_tail,
             dims: self.dims,
-            indcs: self.indcs,
+            indcs: indcs_tail,
             max_idx: self.max_idx,
             offs: self.offs,
           },
@@ -72,13 +76,18 @@ macro_rules! impl_iter {
           return None;
         }
         let range = self.curr_idx - 1..self.curr_idx;
-        let [indcs, values] = outermost_offs(&self.dims, self.offs, range);
         self.curr_idx -= 1;
+        let [indcs, values] = outermost_offs(&self.dims, self.offs, range);
+        let data = mem::take(&mut self.data);
+        let (data_head, data_tail) = data.$split_at(values.end - values.start);
+        let (indcs_head, indcs_tail) = self.indcs.split_at(values.end - values.start);
+        self.data = data_tail;
+        self.indcs = indcs_tail;
         Some($ref {
-          data: unsafe { $from_raw_parts(self.data.add(values.start), values.end - values.start) },
+          data: data_head,
           dims: self.dims,
-          indcs: &self.indcs[values],
-          offs: &self.offs[indcs],
+          indcs: indcs_head,
+          offs: self.offs.get(indcs)?,
         })
       }
     }
@@ -96,13 +105,18 @@ macro_rules! impl_iter {
           return None;
         }
         let range = self.curr_idx..self.curr_idx + 1;
-        let [indcs, values] = outermost_offs(&self.dims, self.offs, range);
         self.curr_idx += 1;
+        let [indcs, values] = outermost_offs(&self.dims, self.offs, range);
+        let data = mem::take(&mut self.data);
+        let (data_head, data_tail) = data.$split_at(values.end - values.start);
+        let (indcs_head, indcs_tail) = self.indcs.split_at(values.end - values.start);
+        self.data = data_tail;
+        self.indcs = indcs_tail;
         Some($ref {
-          data: unsafe { $from_raw_parts(self.data.add(values.start), values.end - values.start) },
+          data: data_head,
           dims: self.dims,
-          indcs: &self.indcs[values],
-          offs: &self.offs[indcs],
+          indcs: indcs_head,
+          offs: self.offs.get(indcs)?,
         })
       }
 
@@ -110,11 +124,8 @@ macro_rules! impl_iter {
         (self.max_idx, Some(self.max_idx))
       }
     }
-
-    unsafe impl<'a, DA, T> Send for $csl_iter<'a, DA, T> where DA: Dims {}
-    unsafe impl<'a, DA, T> Sync for $csl_iter<'a, DA, T> where DA: Dims {}
   };
 }
 
-impl_iter!(CslIterMut, *mut T, &'a mut [T], from_raw_parts_mut, CslMut);
-impl_iter!(CsIterRef, *const T, &'a [T], from_raw_parts, CslRef);
+impl_iter!(CslLineIterMut, &'a mut [T], split_at_mut, CslMut);
+impl_iter!(CslLineIterRef, &'a [T], split_at, CslRef);

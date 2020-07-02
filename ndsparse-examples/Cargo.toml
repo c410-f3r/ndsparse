@@ -1,6 +1,6 @@
 [dependencies]
 ndsparse = { path = "../ndsparse" }
-cl-traits = { features = ["with-arrayvec", "with-smallvec"], version = "2.0" }
+cl-traits = { default-features = false, features = ["with-arrayvec", "with-smallvec"], version = "4.0" }
 arrayvec = { default-features = false, version = "0.5" }
 smallvec = { default-features = false, version = "1.2" }
 
@@ -10,6 +10,7 @@ path = "dynamic_arrays.rs"
 
 [package]
 edition = "2018"
-name = "examples"
+license = "Apache-2.0"
+name = "ndsparse-examples"
 publish = false
 version = "0.0.0"

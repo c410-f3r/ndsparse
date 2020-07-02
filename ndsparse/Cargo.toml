@@ -1,12 +1,8 @@
 [dependencies]
-cl-traits = { default-features = false, version = "2.0" }
+cl-traits = { default-features = false, version = "4.0" }
 rand = { default-features = false, optional = true, version = "0.7" }
 rayon = { default-features = false, optional = true, version = "1.0" }
 serde = { default-features = false, features = ["derive"], optional = true, version = "1.0" }
-
-[dev-dependencies]
-quickcheck = "0.9"
-quickcheck_macros = "0.9"
 
 [features]
 alloc = ["cl-traits/alloc", "rand/alloc", "serde/alloc"]

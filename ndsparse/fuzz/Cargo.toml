@@ -1,0 +1,37 @@
+[[bin]]
+name = "coo_fuzz"
+path = "fuzz_targets/coo_fuzz.rs"
+
+[[bin]]
+name = "csl_fuzz"
+path = "fuzz_targets/csl_fuzz.rs"
+
+[[bin]]
+name = "random_coo_fuzz"
+path = "fuzz_targets/random_coo_fuzz.rs"
+
+[[bin]]
+name = "random_csl_fuzz"
+path = "fuzz_targets/random_csl_fuzz.rs"
+
+[dependencies]
+arbitrary = { default-features = false, features = ["derive"], version = "0.4" }
+libfuzzer-sys = { default-features = false, version = "0.3" }
+ndsparse = { default-features = false, features = ["alloc", "with-rand", "with-rayon"], path = ".." }
+rand = { default-features = false, version = "0.7" }
+rayon = { default-features = false, version = "1.0" }
+
+[package]
+authors = ["Automatically generated"]
+edition = "2018"
+license = "Apache-2.0"
+name = "ndsparse-fuzz"
+publish = false
+version = "0.0.0"
+
+[package.metadata]
+cargo-fuzz = true
+
+[workspace]
+members = ["."]
+

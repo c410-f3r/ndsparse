@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-. ./scripts/tests-common.sh --source-only
+. "$(dirname "$0")/test-common.sh" --source-only
 
 test_package_with_feature "ndsparse" "alloc"
 test_package_with_feature "ndsparse" "std"

@@ -1,11 +1,13 @@
 //! COO (Coordinate) format for N-dimensions.
 
+mod coo_error;
 mod coo_utils;
 
 use crate::Dims;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use cl_traits::{ArrayWrapper, Storage};
+pub use coo_error::*;
 use coo_utils::*;
 
 /// COO backed by a static array.
@@ -25,8 +27,8 @@ pub type CooVec<DA, DATA> = Coo<DA, Vec<(ArrayWrapper<DA>, DATA)>>;
 ///
 /// # Types
 ///
+/// * `DA`: Data Array
 /// * `DS`: Data Storage
-/// * `const DIMS: usize`: Dimensions length
 #[cfg_attr(feature = "with-serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Coo<DA, DS>
@@ -68,64 +70,41 @@ where
   /// * `into_data`: Data collection
   ///
   /// # Example
-  ///
   #[cfg_attr(all(feature = "alloc", feature = "const-generics"), doc = "```rust")]
   #[cfg_attr(not(all(feature = "alloc", feature = "const-generics")), doc = "```ignore")]
   /// use ndsparse::coo::{CooArray, CooVec};
   /// // Sparse array ([8, _, _, _, _, 9, _, _, _, _])
   /// let mut _sparse_array = CooArray::new([10], [([0].into(), 8.0), ([5].into(), 9.0)]);
   /// // A bunch of nothing for your overflow needs
-  /// let mut _over_nine: CooVec<[usize; 9001], ()>;
+  /// let mut _over_nine: ndsparse::Result<CooVec<[usize; 9001], ()>>;
   /// _over_nine = CooVec::new([0; 9001], vec![]);
   /// ```
-  ///
-  /// # Assertions
-  ///
-  /// * Data indices must be in asceding order
-  /// ```rust,should_panic
-  /// use ndsparse::coo::CooArray;
-  /// let _ = CooArray::new([2, 2], [([1, 1].into(), 8), ([0, 0].into(), 9)]);
-  /// ```
-  ///
-  /// * All indices must be lesser than the defined dimensions
-  /// ```rust,should_panic
-  /// use ndsparse::coo::CooArray;
-  /// let _ = CooArray::new([2, 2], [([0, 1].into(), 8), ([9, 9].into(), 9)]);
-  /// ```
-  ///
-  /// * Must not have duplicated indices
-  /// ```rust,should_panic
-  /// use ndsparse::coo::CooArray;
-  /// let _ = CooArray::new([2, 2], [([0, 0].into(), 8), ([0, 0].into(), 9)]);
-  /// ```
-  pub fn new<ID, IDS>(into_dims: ID, into_data: IDS) -> Self
+  pub fn new<ID, IDS>(into_dims: ID, into_data: IDS) -> crate::Result<Self>
   where
     ID: Into<ArrayWrapper<DA>>,
     IDS: Into<DS>,
   {
     let data = into_data.into();
     let dims = into_dims.into();
-    assert!(
-      crate::utils::are_in_ascending_order(data.as_ref(), |a, b| [&a.0, &b.0]),
-      "Data indices must be in asceding order"
-    );
-    assert!(
-      data.as_ref().iter().all(|(indcs, _)| {
-        indcs.slice().iter().zip(dims.slice().iter()).all(|(data_idx, dim)| {
-          if dim == &0 {
-            true
-          } else {
-            data_idx < dim
-          }
-        })
-      }),
-      "All indices must be lesser than the defined dimensions"
-    );
-    assert!(
-      does_not_have_duplicates_sorted(data.as_ref(), |a, b| a.0[..] != b.0[..]),
-      "Must not have duplicated indices"
-    );
-    Self { data, dims }
+    if !crate::utils::are_in_ascending_order(data.as_ref(), |a, b| [&a.0, &b.0]) {
+      return Err(CooError::InvalidIndcsOrder.into());
+    }
+    let has_invalid_indcs = !data.as_ref().iter().all(|(indcs, _)| {
+      indcs.slice().iter().zip(dims.slice().iter()).all(|(data_idx, dim)| {
+        if dim == &0 {
+          true
+        } else {
+          data_idx < dim
+        }
+      })
+    });
+    if has_invalid_indcs {
+      return Err(CooError::InvalidIndcs.into());
+    }
+    if !does_not_have_duplicates_sorted(data.as_ref(), |a, b| a.0[..] != b.0[..]) {
+      return Err(CooError::DuplicatedIndices.into());
+    }
+    Ok(Self { data, dims })
   }
 
   /// The data that is being stored.
@@ -134,7 +113,7 @@ where
   ///
   /// ```rust
   /// use ndsparse::doc_tests::coo_array_5;
-  /// assert_eq!(coo_array_5().data().get(0), Some(&([0, 0, 1, 1, 2].into(), 1)));
+  /// assert_eq!(coo_array_5().data().first(), Some(&([0, 0, 1, 1, 2].into(), 1)));
   /// ```
   pub fn data(&self) -> &[(ArrayWrapper<DA>, DATA)] {
     self.data.as_ref()
@@ -164,15 +143,6 @@ where
   DA: Dims,
   DS: AsMut<[<DS as Storage>::Item]> + Storage<Item = (ArrayWrapper<DA>, DATA)>,
 {
-  /// Mutable version of [`data`](#method.data).
-  ///
-  /// # Safety
-  ///
-  /// Indices can be modified to overflow its dimensions.
-  pub unsafe fn data_mut(&mut self) -> &[(ArrayWrapper<DA>, DATA)] {
-    self.data.as_mut()
-  }
-
   /// Mutable version of [`value`](#method.value).
   pub fn value_mut(&mut self, indcs: DA) -> Option<&mut DATA> {
     value_mut(indcs.into(), self.data.as_mut())
@@ -199,35 +169,21 @@ where
   /// * `cb`: Callback to control data creation
   ///
   /// # Example
-  ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::coo::CooVec;
   /// use rand::{thread_rng, Rng};
   /// let mut rng = thread_rng();
   /// let dims = [1, 2, 3, 4, 5, 6, 7, 8];
-  /// let mut _random: CooVec<[usize; 8], u8>;
-  /// _random = CooVec::new_controlled_random_with_rand(dims, 9, &mut rng, |r, _| r.gen());
+  /// let mut _random: ndsparse::Result<CooVec<[usize; 8], u8>>;
+  /// _random = CooVec::new_controlled_random_rand(dims, 9, &mut rng, |r, _| r.gen());
   /// ```
-  ///
-  /// # Assertions
-  ///
-  /// * `nnz` must be equal or less than the maximum number of non-zero elements
-  #[cfg_attr(feature = "alloc", doc = "```rust,should_panic")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
-  /// use ndsparse::coo::CooVec;
-  /// use rand::{thread_rng, Rng};
-  /// let mut rng = thread_rng();
-  /// let dims = [1, 2, 3]; // Max of 6 elements (1 * 2 * 3)
-  /// let mut _random: CooVec<[usize; 3], u8>;
-  /// _random = CooVec::new_controlled_random_with_rand(dims, 7, &mut rng, |r, _| r.gen());
-  /// ```
-  pub fn new_controlled_random_with_rand<F, ID, R>(
+  pub fn new_controlled_random_rand<F, ID, R>(
     into_dims: ID,
     nnz: usize,
     rng: &mut R,
     mut cb: F,
-  ) -> Self
+  ) -> crate::Result<Self>
   where
     F: FnMut(&mut R, &DA) -> DATA,
     ID: Into<ArrayWrapper<DA>>,
@@ -235,17 +191,17 @@ where
   {
     use rand::distributions::Distribution;
     let dims = into_dims.into();
-    assert!(
-      nnz <= crate::utils::max_nnz(&dims),
-      "`nnz` must be equal or less than the maximum number of non-zero elements"
-    );
+    if nnz > crate::utils::max_nnz(&dims) {
+      return Err(CooError::NnzGreaterThanMaximumNnz.into());
+    }
     let mut data: DS = Default::default();
     for _ in 0..nnz {
       let indcs_array: DA = cl_traits::create_array(|idx| {
-        if dims[idx] == 0 {
+        let dim = *dims.slice().get(idx).unwrap_or(&0);
+        if dim == 0 {
           0
         } else {
-          rand::distributions::Uniform::from(0..dims[idx]).sample(rng)
+          rand::distributions::Uniform::from(0..dim).sample(rng)
         }
       });
       let indcs = indcs_array.into();
@@ -268,17 +224,18 @@ where
   /// * `upper_bound`: The maximum allowed exclusive dimension
   ///
   /// # Example
-  ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
+  /// # fn main() -> ndsparse::Result<()> {
   /// use ndsparse::coo::CooVec;
   /// use rand::{seq::SliceRandom, thread_rng};
   /// let mut rng = thread_rng();
   /// let upper_bound = 5;
-  /// let random: CooVec<[usize; 8], u8> = CooVec::new_random_with_rand(&mut rng, upper_bound);
-  /// assert!(random.dims().choose(&mut rng).unwrap() < &upper_bound);
-  /// ```
-  pub fn new_random_with_rand<R>(rng: &mut R, upper_bound: usize) -> Self
+  /// let random: ndsparse::Result<CooVec<[usize; 8], u8>>;
+  /// random = CooVec::new_random_rand(&mut rng, upper_bound);
+  /// assert!(random?.dims().choose(&mut rng).unwrap() < &upper_bound);
+  /// # Ok(()) }
+  pub fn new_random_rand<R>(rng: &mut R, upper_bound: usize) -> crate::Result<Self>
   where
     R: rand::Rng,
     rand::distributions::Standard: rand::distributions::Distribution<DATA>,
@@ -286,30 +243,6 @@ where
     let dims = crate::utils::valid_random_dims(rng, upper_bound);
     let max_nnz = crate::utils::max_nnz(&dims);
     let nnz = if max_nnz == 0 { 0 } else { rng.gen_range(0, max_nnz) };
-    Self::new_controlled_random_with_rand(dims, nnz, rng, |rng, _| rng.gen())
-  }
-}
-
-#[cfg(all(test, feature = "with-rand"))]
-impl<DA, DATA, DS> quickcheck::Arbitrary for Coo<DA, DS>
-where
-  DA: Dims + Clone + Send + 'static,
-  DATA: Default + quickcheck::Arbitrary,
-  DS: AsRef<[<DS as Storage>::Item]>
-    + AsMut<[<DS as Storage>::Item]>
-    + Clone
-    + Default
-    + Send
-    + Storage<Item = (ArrayWrapper<DA>, DATA)>
-    + cl_traits::Push<Input = <DS as Storage>::Item>
-    + 'static,
-  rand::distributions::Standard: rand::distributions::Distribution<DATA>,
-{
-  #[inline]
-  fn arbitrary<G>(g: &mut G) -> Self
-  where
-    G: quickcheck::Gen,
-  {
-    Self::new_random_with_rand(g, g.size())
+    Self::new_controlled_random_rand(dims, nnz, rng, |rng, _| rng.gen())
   }
 }
