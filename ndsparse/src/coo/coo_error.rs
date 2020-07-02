@@ -3,30 +3,34 @@ use core::fmt;
 /// Any error related to `Coo` operations
 #[derive(Debug, PartialEq)]
 pub enum CooError {
-  // Coo::new
   /// Some index isn't in asceding order
+  ///
   /// ```rust
   /// use ndsparse::coo::{CooArray, CooError};
   /// let coo = CooArray::new([2, 2], [([1, 1].into(), 8), ([0, 0].into(), 9)]);
   /// assert_eq!(coo, Err(ndsparse::Error::Coo(CooError::InvalidIndcsOrder)));
   /// ```
   InvalidIndcsOrder,
+
   /// Some index is greater than the defined dimensions
+  ///
   /// ```rust
   /// use ndsparse::coo::{CooArray, CooError};
   /// let coo = CooArray::new([2, 2], [([0, 1].into(), 8), ([9, 9].into(), 9)]);
   /// assert_eq!(coo, Err(ndsparse::Error::Coo(CooError::InvalidIndcs)));
   /// ```
   InvalidIndcs,
+
   /// There are duplicated indices
+  ///
   /// ```rust
   /// use ndsparse::coo::{CooArray, CooError};
   /// let coo = CooArray::new([2, 2], [([0, 0].into(), 8), ([0, 0].into(), 9)]);
   /// assert_eq!(coo, Err(ndsparse::Error::Coo(CooError::DuplicatedIndices)));
   DuplicatedIndices,
 
-  // Coo::new_controlled_random_rand
   /// nnz is greater than the maximum permitted number of nnz
+  ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::coo::{CooError, CooVec};
@@ -42,9 +46,15 @@ pub enum CooError {
 }
 
 impl fmt::Display for CooError {
-  #[allow(clippy::use_debug)]
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "{:?}", self)
+    let s = match self {
+      Self::InvalidIndcsOrder => "InvalidIndcsOrder",
+      Self::InvalidIndcs => "InvalidIndcs",
+      Self::DuplicatedIndices => "DuplicatedIndices",
+      #[cfg(feature = "with-rand")]
+      Self::NnzGreaterThanMaximumNnz => "NnzGreaterThanMaximumNnz",
+    };
+    write!(f, "{}", s)
   }
 }
 

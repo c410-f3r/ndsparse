@@ -13,11 +13,10 @@ pub enum Error {
   Csl(CslError),
   /// CslLineConstructorError
   CslLineConstructor(CslLineConstructorError),
-  /// Couldn't unwrap optional element
-  NoElem,
-
   /// This is a bug within the internal logic and shouldn't have happened
   InvalidOperation,
+  /// Couldn't unwrap optional element
+  NoElem,
 }
 
 #[cfg(feature = "with-rand")]
@@ -32,9 +31,14 @@ impl Error {
 }
 
 impl fmt::Display for Error {
-  #[allow(clippy::use_debug)]
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "{:?}", self)
+    match self {
+      Self::Coo(x) => write!(f, "Coo({})", x),
+      Self::Csl(x) => write!(f, "Csl({})", x),
+      Self::CslLineConstructor(x) => write!(f, "CslLineConstructor({})", x),
+      Self::InvalidOperation => write!(f, "InvalidOperation"),
+      Self::NoElem => write!(f, "InvalidOperation"),
+    }
   }
 }
 

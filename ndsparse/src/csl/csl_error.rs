@@ -3,17 +3,18 @@ use core::fmt;
 /// Any error related to Csl operations
 #[derive(Debug, PartialEq)]
 pub enum CslError {
-  /// Some innermost dimension length is equal to zero
+  /// Data or indices length is greater than the product of all dimensions length
+  ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::csl::{CslError, CslVec};
-  /// let csl: ndsparse::Result<CslVec<[usize; 5], i32>>;
-  /// csl = CslVec::new([1, 2, 3, 0, 5], vec![], vec![], vec![]);
-  /// assert_eq!(csl, Err(ndsparse::Error::Csl(CslError::InnermostDimsZero)));
+  /// let csl = CslVec::new([3], vec![8, 9, 9, 9, 9], vec![0, 5, 5, 5, 5], vec![0, 2]);
+  /// assert_eq!(csl, Err(ndsparse::Error::Csl(CslError::DataIndcsLengthGreaterThanDimsLength)));
   /// ```
-  InnermostDimsZero,
+  DataIndcsLengthGreaterThanDimsLength,
 
   /// The data length is different than the indices length
+  ///
   #[cfg_attr(feature = "alloc", doc = "```rust")]
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::csl::{ CslError, CslVec};
@@ -21,15 +22,6 @@ pub enum CslError {
   /// assert_eq!(csl, Err(ndsparse::Error::Csl(CslError::DiffDataIndcsLength)));
   /// ```
   DiffDataIndcsLength,
-
-  /// Offsets aren't in ascending order
-  ///
-  /// ```rust
-  /// use ndsparse::csl::{CslArray, CslError};
-  /// let csl = CslArray::new([10], [8, 9], [0, 5], [2, 0]);
-  /// assert_eq!(csl, Err(ndsparse::Error::Csl(CslError::InvalidOffsetsOrder)));
-  /// ```
-  InvalidOffsetsOrder,
 
   /// Duplicated indices in a line
   /// ```rust
@@ -39,24 +31,6 @@ pub enum CslError {
   /// ```
   DuplicatedIndices,
 
-  /// Data or indices length is greater than the product of all dimensions length
-  #[cfg_attr(feature = "alloc", doc = "```rust")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
-  /// use ndsparse::csl::{CslError, CslVec};
-  /// let csl = CslVec::new([3], vec![8, 9, 9, 9, 9], vec![0, 5, 5, 5, 5], vec![0, 2]);
-  /// assert_eq!(csl, Err(ndsparse::Error::Csl(CslError::DataIndcsLengthGreaterThanDimsLength)));
-  /// ```
-  DataIndcsLengthGreaterThanDimsLength,
-
-  /// Last offset is not equal to the nnz
-  ///
-  /// ```rust
-  /// use ndsparse::csl::{CslArray, CslError};
-  /// let csl = CslArray::new([10], [8, 9], [0, 5], [0, 4]);
-  /// assert_eq!(csl, Err(ndsparse::Error::Csl(CslError::LastOffsetDifferentNnz)));
-  /// ```
-  LastOffsetDifferentNnz,
-
   /// A index is greater or equal to the innermost dimension length
   ///
   /// ```rust
@@ -65,6 +39,16 @@ pub enum CslError {
   /// assert_eq!(csl, Err(ndsparse::Error::Csl(CslError::IndcsGreaterThanEqualDimLength)));
   /// ```
   IndcsGreaterThanEqualDimLength,
+
+  /// Some innermost dimension length is equal to zero
+  #[cfg_attr(feature = "alloc", doc = "```rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
+  /// use ndsparse::csl::{CslError, CslVec};
+  /// let csl: ndsparse::Result<CslVec<[usize; 5], i32>>;
+  /// csl = CslVec::new([1, 2, 3, 0, 5], vec![], vec![], vec![]);
+  /// assert_eq!(csl, Err(ndsparse::Error::Csl(CslError::InnermostDimsZero)));
+  /// ```
+  InnermostDimsZero,
 
   /// Line iterator must deal with non-empty dimensions
   #[cfg_attr(feature = "alloc", doc = "```rust")]
@@ -85,6 +69,24 @@ pub enum CslError {
   /// assert_eq!(csl, Err(ndsparse::Error::Csl(CslError::InvalidOffsetsLength)));
   /// ```
   InvalidOffsetsLength,
+
+  /// Offsets aren't in ascending order
+  ///
+  /// ```rust
+  /// use ndsparse::csl::{CslArray, CslError};
+  /// let csl = CslArray::new([10], [8, 9], [0, 5], [2, 0]);
+  /// assert_eq!(csl, Err(ndsparse::Error::Csl(CslError::InvalidOffsetsOrder)));
+  /// ```
+  InvalidOffsetsOrder,
+
+  /// Last offset is not equal to the nnz
+  ///
+  /// ```rust
+  /// use ndsparse::csl::{CslArray, CslError};
+  /// let csl = CslArray::new([10], [8, 9], [0, 5], [0, 4]);
+  /// assert_eq!(csl, Err(ndsparse::Error::Csl(CslError::LastOffsetDifferentNnz)));
+  /// ```
+  LastOffsetDifferentNnz,
 
   /// nnz is greater than the maximum permitted number of nnz
   #[cfg_attr(feature = "alloc", doc = "```rust")]
@@ -111,9 +113,21 @@ pub enum CslError {
 }
 
 impl fmt::Display for CslError {
-  #[allow(clippy::use_debug)]
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "{:?}", self)
+    let s = match self {
+      Self::DataIndcsLengthGreaterThanDimsLength => "DataIndcsLengthGreaterThanDimsLength",
+      Self::DiffDataIndcsLength => "DiffDataIndcsLength",
+      Self::DuplicatedIndices => "DuplicatedIndices",
+      Self::IndcsGreaterThanEqualDimLength => "IndcsGreaterThanEqualDimLength",
+      Self::InnermostDimsZero => "InnermostDimsZero",
+      Self::InvalidIterDim => "InvalidIterDim",
+      Self::InvalidOffsetsLength => "InvalidOffsetsLength",
+      Self::InvalidOffsetsOrder => "InvalidOffsetsOrder",
+      Self::LastOffsetDifferentNnz => "LastOffsetDifferentNnz",
+      Self::NnzGreaterThanMaximumNnz => "NnzGreaterThanMaximumNnz",
+      Self::OffsLengthOverflow => "OffsLengthOverflowb",
+    };
+    write!(f, "{}", s)
   }
 }
 

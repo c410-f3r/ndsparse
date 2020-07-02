@@ -175,9 +175,15 @@ pub enum CslLineConstructorError {
 }
 
 impl fmt::Display for CslLineConstructorError {
-  #[allow(clippy::use_debug)]
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "{:?}", self)
+    let s = match self {
+      Self::DimsOverflow => "DimsOverflow",
+      Self::NoValuesForPushLine => "NoValuesForPushLine",
+      Self::UnsortedIndices => "UnsortedIndices",
+      Self::EmptyDimension => "EmptyDimension",
+      Self::MaxNumOfLines => "MaxNumOfLines",
+    };
+    write!(f, "{}", s)
   }
 }
 
