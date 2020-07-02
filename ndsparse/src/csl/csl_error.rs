@@ -124,6 +124,7 @@ impl fmt::Display for CslError {
       Self::InvalidOffsetsLength => "InvalidOffsetsLength",
       Self::InvalidOffsetsOrder => "InvalidOffsetsOrder",
       Self::LastOffsetDifferentNnz => "LastOffsetDifferentNnz",
+      #[cfg(feature = "with-rand")]
       Self::NnzGreaterThanMaximumNnz => "NnzGreaterThanMaximumNnz",
       Self::OffsLengthOverflow => "OffsLengthOverflowb",
     };
