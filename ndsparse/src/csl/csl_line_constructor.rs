@@ -121,7 +121,7 @@ where
       push(curr_last_off, curr_nnz, idx, value);
       idx
     } else {
-      return Err(CslLineConstructorError::NoValuesForPushLine.into());
+      return Ok(self.push_empty_line());
     };
 
     for (curr_last_off, (curr_nnz, (idx, value))) in iter {
@@ -133,7 +133,7 @@ where
     }
 
     if nnz == 0 {
-      return Err(CslLineConstructorError::NoValuesForPushLine.into());
+      return Ok(self.push_empty_line());
     }
     self.csl.offs.push(last_off);
     self.last_off = last_off;
@@ -164,8 +164,6 @@ where
 pub enum CslLineConstructorError {
   /// The maximum number of dimenstions has been reached
   DimsOverflow,
-  /// Couldn't push values into a new line
-  NoValuesForPushLine,
   /// All indices must be in ascending order
   UnsortedIndices,
   /// It isn't possible to construct new elements in an empty dimension
@@ -178,7 +176,6 @@ impl fmt::Display for CslLineConstructorError {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let s = match self {
       Self::DimsOverflow => "DimsOverflow",
-      Self::NoValuesForPushLine => "NoValuesForPushLine",
       Self::UnsortedIndices => "UnsortedIndices",
       Self::EmptyDimension => "EmptyDimension",
       Self::MaxNumOfLines => "MaxNumOfLines",
