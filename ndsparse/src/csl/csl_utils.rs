@@ -33,11 +33,11 @@ where
   else {
     return None;
   };
-  let [offs_indcs, values] = line_offs(&csl.dims, &indcs, csl.offs.as_ref())?;
+  let [offs_indcs, offs_values] = line_offs(&csl.dims, &indcs, csl.offs.as_ref())?;
   Some($ref {
-    data: csl.data.$trait_fn().$get(values.clone())?,
+    data: csl.data.$trait_fn().$get(offs_values.clone())?,
     dims: [last_dim].into(),
-    indcs: &csl.indcs.as_ref().get(values)?,
+    indcs: &csl.indcs.as_ref().get(offs_values)?,
     offs: &csl.offs.as_ref().get(offs_indcs)?,
   })
 }
@@ -132,9 +132,9 @@ where
   OS: AsRef<[usize]>,
 {
   let innermost_idx = indcs.slice().last()?;
-  let [_, values] = line_offs(&csl.dims, &indcs, csl.offs.as_ref())?;
-  let start = values.start;
-  if let Ok(x) = csl.indcs.as_ref().get(values)?.binary_search(&innermost_idx) {
+  let [_, offs_values] = line_offs(&csl.dims, &indcs, csl.offs.as_ref())?;
+  let start = offs_values.start;
+  if let Ok(x) = csl.indcs.as_ref().get(offs_values)?.binary_search(&innermost_idx) {
     Some(start + x)
   } else {
     None
@@ -152,19 +152,25 @@ where
 {
   match DA::CAPACITY {
     0 => None,
-    1 => Some([0..2, *offs.first()?..*offs.get(1)?]),
+    1 => Some({
+      let off_end = offs.get(1)?.saturating_sub(*offs.get(0)?);
+      [0..2, 0..off_end]
+    }),
     _ => {
-      let diff = indcs.slice().len() - 2;
+      let diff = indcs.slice().len().saturating_sub(2);
       let mut lines: usize = 0;
       for (idx, curr_idx) in indcs.slice().iter().copied().enumerate().take(diff) {
         let product = dims.slice().iter().skip(idx + 1).rev().skip(1).product::<usize>();
         lines = lines.saturating_add(product.saturating_mul(curr_idx));
       }
       lines = lines.saturating_add(*indcs.slice().get(dims.slice().len() - 2)?);
-      if lines > usize::MAX - 2 {
+      if lines > usize::MAX.saturating_sub(2) {
         return None;
       }
-      Some([lines..lines + 2, *offs.get(lines)?..*offs.get(lines + 1)?])
+      let first = *offs.first()?;
+      let off_start = offs.get(lines)?.saturating_sub(first);
+      let off_end = offs.get(lines + 1)?.saturating_sub(first);
+      Some([lines..lines.saturating_add(2), off_start..off_end])
     }
   }
 }

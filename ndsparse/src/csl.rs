@@ -395,7 +395,10 @@ where
   ///
   /// ```rust
   /// use ndsparse::doc_tests::csl_array_4;
-  /// assert_eq!(csl_array_4().value([1, 0, 2, 2]), Some(&9));
+  /// let csl = csl_array_4();
+  /// assert_eq!(csl.value([1, 0, 2, 2]), Some(&9));
+  /// let line = csl.line([0, 0, 3, 0]).unwrap();
+  /// assert_eq!(line.value([3]), Some(&4));
   /// ```
   pub fn value(&self, indcs: DA) -> Option<&DATA> {
     let idx = data_idx(self, indcs)?;
