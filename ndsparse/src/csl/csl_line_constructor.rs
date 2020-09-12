@@ -140,19 +140,19 @@ where
     Ok(self)
   }
 
-  // self.curr_dim_idx always points to a valid reference
+  // CLIPPY: self.curr_dim_idx always points to a valid reference
   #[allow(clippy::unwrap_used)]
   fn curr_dim(&mut self) -> &mut usize {
     self.csl.dims.slice_mut().get_mut(self.curr_dim_idx).unwrap()
   }
 
-  // Constructor doesn't contain empty dimensions
+  // CLIPPY: Constructor doesn't contain empty dimensions
   #[allow(clippy::unwrap_used)]
   fn last_dim(&mut self) -> usize {
     *self.csl.dims.slice().last().unwrap()
   }
 
-  // Always have at least one element
+  // CLIPPY: Offsets always have at least one element
   #[allow(clippy::unwrap_used)]
   fn last_off(csl: &Csl<DA, DS, IS, PS>) -> usize {
     *csl.offs.as_ref().last().unwrap()

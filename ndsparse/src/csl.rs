@@ -59,7 +59,7 @@ pub type CslVec<DA, DATA> = Csl<DA, Vec<DATA>, Vec<usize>, Vec<usize>>;
 /// * `IS`: Indices Storage
 /// * `OS`: Offsets Storage
 #[cfg_attr(feature = "with-serde", derive(serde::Deserialize, serde::Serialize))]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Csl<DA, DS, IS, OS>
 where
   DA: Dims,

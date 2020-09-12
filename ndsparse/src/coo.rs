@@ -30,7 +30,7 @@ pub type CooVec<DA, DATA> = Coo<DA, Vec<(ArrayWrapper<DA>, DATA)>>;
 /// * `DA`: Data Array
 /// * `DS`: Data Storage
 #[cfg_attr(feature = "with-serde", derive(serde::Deserialize, serde::Serialize))]
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Coo<DA, DS>
 where
   DA: Dims,
