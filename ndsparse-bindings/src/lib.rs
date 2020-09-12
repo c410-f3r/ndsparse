@@ -4,7 +4,7 @@
 //! The array support of these third-parties dependencies is minimum to non-existent, threfore,
 //! the overhead of heap allocating.
 
-#![allow(clippy::multiple_inherent_impl, clippy::panic, unsafe_code, unused_qualifications)]
+#![allow(clippy::all, clippy::restriction)]
 
 use ndsparse::csl::Csl;
 #[cfg(feature = "with-pyo3")]
