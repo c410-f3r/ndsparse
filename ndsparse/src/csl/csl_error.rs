@@ -114,7 +114,7 @@ pub enum CslError {
 
 impl fmt::Display for CslError {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let s = match self {
+    let s = match *self {
       Self::DataIndcsLengthGreaterThanDimsLength => "DataIndcsLengthGreaterThanDimsLength",
       Self::DiffDataIndcsLength => "DiffDataIndcsLength",
       Self::DuplicatedIndices => "DuplicatedIndices",

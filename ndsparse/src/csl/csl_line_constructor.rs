@@ -174,7 +174,7 @@ pub enum CslLineConstructorError {
 
 impl fmt::Display for CslLineConstructorError {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let s = match self {
+    let s = match *self {
       Self::DimsOverflow => "DimsOverflow",
       Self::UnsortedIndices => "UnsortedIndices",
       Self::EmptyDimension => "EmptyDimension",

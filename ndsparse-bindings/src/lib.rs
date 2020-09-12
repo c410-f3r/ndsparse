@@ -4,7 +4,7 @@
 //! The array support of these third-parties dependencies is minimum to non-existent, threfore,
 //! the overhead of heap allocating.
 
-#![allow(clippy::all, clippy::restriction)]
+#![allow(clippy::all, clippy::restriction, unused_qualifications, unsafe_code)]
 
 use ndsparse::csl::Csl;
 #[cfg(feature = "with-pyo3")]
@@ -72,7 +72,7 @@ macro_rules! create_csl {
         data: $data_storage,
         indcs: $indcs_storage,
         offs: $offs_storage,
-      ) -> pyo3::PyResult<Self> {
+      ) -> PyResult<Self> {
         let map_err = |e| exceptions::TypeError::py_err(format!("{:?}", e));
         let csl = Csl::new(dims, data, indcs, offs).map_err(map_err)?;
         Ok($struct_name { csl })

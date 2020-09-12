@@ -541,7 +541,7 @@ where
       .slice()
       .iter()
       .zip(self.dims.slice_mut().iter_mut())
-      .filter(|(a, _)| **a == 0)
+      .filter(|&(a, _)| *a == 0)
       .for_each(|(_, b)| *b = 0);
   }
 

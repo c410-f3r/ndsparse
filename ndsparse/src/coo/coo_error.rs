@@ -47,7 +47,7 @@ pub enum CooError {
 
 impl fmt::Display for CooError {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let s = match self {
+    let s = match *self {
       Self::InvalidIndcsOrder => "InvalidIndcsOrder",
       Self::InvalidIndcs => "InvalidIndcs",
       Self::DuplicatedIndices => "DuplicatedIndices",

@@ -32,10 +32,10 @@ impl Error {
 
 impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    match self {
-      Self::Coo(x) => write!(f, "Coo({})", x),
-      Self::Csl(x) => write!(f, "Csl({})", x),
-      Self::CslLineConstructor(x) => write!(f, "CslLineConstructor({})", x),
+    match *self {
+      Self::Coo(ref x) => write!(f, "Coo({})", x),
+      Self::Csl(ref x) => write!(f, "Csl({})", x),
+      Self::CslLineConstructor(ref x) => write!(f, "CslLineConstructor({})", x),
       Self::InvalidOperation => write!(f, "InvalidOperation"),
       Self::NoElem => write!(f, "InvalidOperation"),
     }

@@ -89,7 +89,7 @@ where
     if !crate::utils::are_in_ascending_order(data.as_ref(), |a, b| [&a.0, &b.0]) {
       return Err(CooError::InvalidIndcsOrder.into());
     }
-    let has_invalid_indcs = !data.as_ref().iter().all(|(indcs, _)| {
+    let has_invalid_indcs = !data.as_ref().iter().all(|&(indcs, _)| {
       indcs.slice().iter().zip(dims.slice().iter()).all(|(data_idx, dim)| {
         if dim == &0 {
           true
