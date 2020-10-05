@@ -1,5 +1,5 @@
 [dependencies]
-cl-traits = { default-features = false, version = "4.0" }
+cl-traits = { default-features = false, git = "https://github.com/c410-f3r/cl-traits" }
 ndsparse = { default-features = false, features = ["alloc"], path = "../ndsparse" }
 pyo3 = { default-features = false, features = ["extension-module", "macros"], optional = true, version = "0.11" }
 wasm-bindgen = { default-features = false, features = ["std"], optional = true, version = "0.2" }
@@ -18,3 +18,6 @@ license = "Apache-2.0"
 name = "ndsparse-bindings"
 publish = false
 version = "0.0.0"
+
+[workspace]
+members = ["."]

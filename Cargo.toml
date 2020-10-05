@@ -1,7 +1,5 @@
 [workspace]
 members = [
-    "ndsparse-examples",
-    "ndsparse-bindings",
     "ndsparse",
 ]
 

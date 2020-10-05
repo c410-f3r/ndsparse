@@ -3,9 +3,6 @@
 use crate::{coo::CooArray, csl::CslArray};
 #[cfg(feature = "alloc")]
 use crate::{coo::CooVec, csl::CslVec};
-use cl_traits::ArrayWrapper;
-
-type CooArray5 = CooArray<[usize; 5], [(ArrayWrapper<[usize; 5]>, i32); 7]>;
 
 /// As odd as it may seem, this illustration is just a guide to get a grasp of
 /// a 5D structure.
@@ -40,35 +37,34 @@ type CooArray5 = CooArray<[usize; 5], [(ArrayWrapper<[usize; 5]>, i32); 7]>;
 /// let _ = CooArray::new(
 ///   [2, 3, 4, 3, 3],
 ///   [
-///     ([0, 0, 1, 1, 2].into(), 1),
-///     ([0, 1, 0, 1, 1].into(), 2),
-///     ([0, 1, 3, 0, 0].into(), 3),
-///     ([0, 2, 2, 0, 1].into(), 4),
-///     ([1, 1, 0, 2, 1].into(), 5),
-///     ([1, 2, 3, 0, 2].into(), 6),
-///     ([1, 2, 3, 2, 2].into(), 7),
+///     ([0, 0, 1, 1, 2], 1),
+///     ([0, 1, 0, 1, 1], 2),
+///     ([0, 1, 3, 0, 0], 3),
+///     ([0, 2, 2, 0, 1], 4),
+///     ([1, 1, 0, 2, 1], 5),
+///     ([1, 2, 3, 0, 2], 6),
+///     ([1, 2, 3, 2, 2], 7),
 ///   ],
 /// );
 /// ```
-pub fn coo_array_5() -> CooArray5 {
+pub fn coo_array_5() -> CooArray<i32, 5, 7> {
   CooArray {
-    dims: [2, 3, 4, 3, 3].into(),
+    dims: [2, 3, 4, 3, 3],
     data: [
-      ([0, 0, 1, 1, 2].into(), 1),
-      ([0, 1, 0, 1, 1].into(), 2),
-      ([0, 1, 3, 0, 0].into(), 3),
-      ([0, 2, 2, 0, 1].into(), 4),
-      ([1, 1, 0, 2, 1].into(), 5),
-      ([1, 2, 3, 0, 2].into(), 6),
-      ([1, 2, 3, 2, 2].into(), 7),
-    ]
-    .into(),
+      ([0, 0, 1, 1, 2], 1),
+      ([0, 1, 0, 1, 1], 2),
+      ([0, 1, 3, 0, 0], 3),
+      ([0, 2, 2, 0, 1], 4),
+      ([1, 1, 0, 2, 1], 5),
+      ([1, 2, 3, 0, 2], 6),
+      ([1, 2, 3, 2, 2], 7),
+    ],
   }
 }
 
 /// [`Vec`](alloc::vec::Vec) version of [`coo_array_5`].
 #[cfg(feature = "alloc")]
-pub fn coo_vec_5() -> CooVec<[usize; 5], i32> {
+pub fn coo_vec_5() -> CooVec<i32, 5> {
   let coo = coo_array_5();
   CooVec { dims: coo.dims, data: coo.data.to_vec() }
 }
@@ -103,18 +99,18 @@ pub fn coo_vec_5() -> CooVec<[usize; 5], i32> {
 ///   [0, 2, 3, 3, 5, 6, 6, 6, 6, 7, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
 /// );
 /// ```
-pub fn csl_array_4() -> CslArray<[usize; 4], [i32; 9], [usize; 9], [usize; 25]> {
+pub fn csl_array_4() -> CslArray<i32, 4, 9, 25> {
   CslArray {
-    data: [1, 2, 3, 4, 5, 6, 7, 8, 9].into(),
-    dims: [2, 3, 4, 5].into(),
-    indcs: [0, 3, 1, 3, 4, 2, 2, 4, 2].into(),
-    offs: [0, 2, 3, 3, 5, 6, 6, 6, 6, 7, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9].into(),
+    data: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    dims: [2, 3, 4, 5],
+    indcs: [0, 3, 1, 3, 4, 2, 2, 4, 2],
+    offs: [0, 2, 3, 3, 5, 6, 6, 6, 6, 7, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
   }
 }
 
 /// [`Vec`](alloc::vec::Vec) version of [`csl_array_4`].
 #[cfg(feature = "alloc")]
-pub fn csl_vec_4() -> CslVec<[usize; 4], i32> {
+pub fn csl_vec_4() -> CslVec<i32, 4> {
   let csl = csl_array_4();
   CslVec {
     data: csl.data.to_vec(),

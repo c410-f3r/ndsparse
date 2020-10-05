@@ -1,18 +1,18 @@
 [[bin]]
-name = "coo_fuzz"
-path = "fuzz_targets/coo_fuzz.rs"
+name = "coo"
+path = "fuzz_targets/coo.rs"
 
 [[bin]]
-name = "csl_fuzz"
-path = "fuzz_targets/csl_fuzz.rs"
+name = "csl"
+path = "fuzz_targets/csl.rs"
 
 [[bin]]
-name = "random_coo_fuzz"
-path = "fuzz_targets/random_coo_fuzz.rs"
+name = "random_coo"
+path = "fuzz_targets/random_coo.rs"
 
 [[bin]]
-name = "random_csl_fuzz"
-path = "fuzz_targets/random_csl_fuzz.rs"
+name = "random_csl"
+path = "fuzz_targets/random_csl.rs"
 
 [dependencies]
 arbitrary = { default-features = false, features = ["derive"], version = "0.4" }

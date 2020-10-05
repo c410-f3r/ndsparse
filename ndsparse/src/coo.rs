@@ -3,25 +3,24 @@
 mod coo_error;
 mod coo_utils;
 
-use crate::Dims;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
-use cl_traits::{ArrayWrapper, Storage};
+use cl_traits::Storage;
 pub use coo_error::*;
 use coo_utils::*;
 
 /// COO backed by a static array.
-pub type CooArray<DA, DTA> = Coo<DA, ArrayWrapper<DTA>>;
+pub type CooArray<DATA, const D: usize, const DT: usize> = Coo<[([usize; D], DATA); DT], D>;
 
 /// COO backed by a mutable slice
-pub type CooMut<'a, DA, DATA> = Coo<DA, &'a mut [(ArrayWrapper<DA>, DATA)]>;
+pub type CooMut<'a, DATA, const D: usize> = Coo<&'a mut [([usize; D], DATA)], D>;
 
 /// COO backed by a slice
-pub type CooRef<'a, DA, DATA> = Coo<DA, &'a [(ArrayWrapper<DA>, DATA)]>;
+pub type CooRef<'a, DATA, const D: usize> = Coo<&'a [([usize; D], DATA)], D>;
 
 #[cfg(feature = "alloc")]
 /// COO backed by a dynamic vector.
-pub type CooVec<DA, DATA> = Coo<DA, Vec<(ArrayWrapper<DA>, DATA)>>;
+pub type CooVec<DATA, const D: usize> = Coo<Vec<([usize; D], DATA)>, D>;
 
 /// Base structure for all COO* variants.
 ///
@@ -30,19 +29,13 @@ pub type CooVec<DA, DATA> = Coo<DA, Vec<(ArrayWrapper<DA>, DATA)>>;
 /// * `DA`: Data Array
 /// * `DS`: Data Storage
 #[cfg_attr(feature = "with-serde", derive(serde::Deserialize, serde::Serialize))]
-#[derive(Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Coo<DA, DS>
-where
-  DA: Dims,
-{
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct Coo<DS, const D: usize> {
   pub(crate) data: DS,
-  pub(crate) dims: ArrayWrapper<DA>,
+  pub(crate) dims: [usize; D],
 }
 
-impl<DA, DS> Coo<DA, DS>
-where
-  DA: Dims,
-{
+impl<DS, const D: usize> Coo<DS, D> {
   /// The definitions of all dimensions.
   ///
   /// # Example
@@ -52,15 +45,14 @@ where
   /// assert_eq!(coo_array_5().dims(), &[2, 3, 4, 3, 3]);
   /// ```
   #[inline]
-  pub fn dims(&self) -> &DA {
-    &*self.dims
+  pub fn dims(&self) -> &[usize; D] {
+    &self.dims
   }
 }
 
-impl<DA, DATA, DS> Coo<DA, DS>
+impl<DATA, DS, const D: usize> Coo<DS, D>
 where
-  DA: Dims,
-  DS: AsRef<[<DS as Storage>::Item]> + Storage<Item = (ArrayWrapper<DA>, DATA)>,
+  DS: AsRef<[<DS as Storage>::Item]> + Storage<Item = ([usize; D], DATA)>,
 {
   /// Creates a valid COO instance.
   ///
@@ -70,33 +62,33 @@ where
   /// * `into_data`: Data collection
   ///
   /// # Example
-  #[cfg_attr(all(feature = "alloc", feature = "const-generics"), doc = "```rust")]
-  #[cfg_attr(not(all(feature = "alloc", feature = "const-generics")), doc = "```ignore")]
+  #[cfg_attr(feature = "alloc", doc = "```rust")]
+  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::coo::{CooArray, CooVec};
   /// // Sparse array ([8, _, _, _, _, 9, _, _, _, _])
   /// let mut _sparse_array = CooArray::new([10], [([0].into(), 8.0), ([5].into(), 9.0)]);
   /// // A bunch of nothing for your overflow needs
-  /// let mut _over_nine: ndsparse::Result<CooVec<[usize; 9001], ()>>;
+  /// let mut _over_nine: ndsparse::Result<CooVec<(), 9001>>;
   /// _over_nine = CooVec::new([0; 9001], vec![]);
   /// ```
-  pub fn new<ID, IDS>(into_dims: ID, into_data: IDS) -> crate::Result<Self>
+  pub fn new<IDS>(dims: [usize; D], into_data: IDS) -> crate::Result<Self>
   where
-    ID: Into<ArrayWrapper<DA>>,
     IDS: Into<DS>,
   {
     let data = into_data.into();
-    let dims = into_dims.into();
     if !crate::utils::are_in_ascending_order(data.as_ref(), |a, b| [&a.0, &b.0]) {
       return Err(CooError::InvalidIndcsOrder.into());
     }
     let has_invalid_indcs = !data.as_ref().iter().all(|&(indcs, _)| {
-      indcs.slice().iter().zip(dims.slice().iter()).all(|(data_idx, dim)| {
-        if dim == &0 {
-          true
-        } else {
-          data_idx < dim
-        }
-      })
+      indcs.iter().zip(dims.iter()).all(
+        |(data_idx, dim)| {
+          if dim == &0 {
+            true
+          } else {
+            data_idx < dim
+          }
+        },
+      )
     });
     if has_invalid_indcs {
       return Err(CooError::InvalidIndcs.into());
@@ -115,7 +107,7 @@ where
   /// use ndsparse::doc_tests::coo_array_5;
   /// assert_eq!(coo_array_5().data().first(), Some(&([0, 0, 1, 1, 2].into(), 1)));
   /// ```
-  pub fn data(&self) -> &[(ArrayWrapper<DA>, DATA)] {
+  pub fn data(&self) -> &[([usize; D], DATA)] {
     self.data.as_ref()
   }
 
@@ -133,30 +125,28 @@ where
   /// assert_eq!(coo.value([0, 0, 0, 0, 0]), None);
   /// assert_eq!(coo.value([0, 2, 2, 0, 1]), Some(&4));
   /// ```
-  pub fn value(&self, indcs: DA) -> Option<&DATA> {
-    value(indcs.into(), &self.data.as_ref())
+  pub fn value(&self, indcs: [usize; D]) -> Option<&DATA> {
+    value(indcs, &self.data.as_ref())
   }
 }
 
-impl<DA, DATA, DS> Coo<DA, DS>
+impl<DATA, DS, const D: usize> Coo<DS, D>
 where
-  DA: Dims,
-  DS: AsMut<[<DS as Storage>::Item]> + Storage<Item = (ArrayWrapper<DA>, DATA)>,
+  DS: AsMut<[<DS as Storage>::Item]> + Storage<Item = ([usize; D], DATA)>,
 {
   /// Mutable version of [`value`](#method.value).
-  pub fn value_mut(&mut self, indcs: DA) -> Option<&mut DATA> {
-    value_mut(indcs.into(), self.data.as_mut())
+  pub fn value_mut(&mut self, indcs: [usize; D]) -> Option<&mut DATA> {
+    value_mut(indcs, self.data.as_mut())
   }
 }
 
 #[cfg(feature = "with-rand")]
-impl<DA, DATA, DS> Coo<DA, DS>
+impl<DATA, DS, const D: usize> Coo<DS, D>
 where
-  DA: Dims,
   DS: AsMut<[<DS as Storage>::Item]>
     + AsRef<[<DS as Storage>::Item]>
     + Default
-    + Storage<Item = (ArrayWrapper<DA>, DATA)>
+    + Storage<Item = ([usize; D], DATA)>
     + cl_traits::Push<Input = <DS as Storage>::Item>,
 {
   /// Creates a new random and valid instance delimited by the passed arguments.
@@ -172,39 +162,36 @@ where
   #[cfg_attr(feature = "alloc", doc = "```rust")]
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::coo::CooVec;
-  /// use rand::{thread_rng, Rng};
-  /// let mut rng = thread_rng();
-  /// let dims = [1, 2, 3, 4, 5, 6, 7, 8];
-  /// let mut _random: ndsparse::Result<CooVec<[usize; 8], u8>>;
-  /// _random = CooVec::new_controlled_random_rand(dims, 9, &mut rng, |r, _| r.gen());
+  /// use rand::{Rng, rngs::mock::StepRng};
+  /// let mut rng = StepRng::new(0, 1);
+  /// let dims = [1, 2, 3];
+  /// let mut _random: ndsparse::Result<CooVec<u8, 3>>;
+  /// _random = CooVec::new_controlled_random_rand(dims, 3, &mut rng, |r, _| r.gen());
   /// ```
-  pub fn new_controlled_random_rand<F, ID, R>(
-    into_dims: ID,
+  pub fn new_controlled_random_rand<F, R>(
+    dims: [usize; D],
     nnz: usize,
     rng: &mut R,
     mut cb: F,
   ) -> crate::Result<Self>
   where
-    F: FnMut(&mut R, &DA) -> DATA,
-    ID: Into<ArrayWrapper<DA>>,
+    F: FnMut(&mut R, &[usize; D]) -> DATA,
     R: rand::Rng,
   {
     use rand::distributions::Distribution;
-    let dims = into_dims.into();
     if nnz > crate::utils::max_nnz(&dims) {
       return Err(CooError::NnzGreaterThanMaximumNnz.into());
     }
     let mut data: DS = Default::default();
     for _ in 0..nnz {
-      let indcs_array: DA = cl_traits::create_array(|idx| {
-        let dim = *dims.slice().get(idx).unwrap_or(&0);
+      let indcs: [usize; D] = cl_traits::create_array(|idx| {
+        let dim = *dims.get(idx).unwrap_or(&0);
         if dim == 0 {
           0
         } else {
           rand::distributions::Uniform::from(0..dim).sample(rng)
         }
       });
-      let indcs = indcs_array.into();
       if data.as_ref().iter().all(|value| value.0 != indcs) {
         data.push({
           let element = cb(rng, &indcs);
@@ -228,10 +215,10 @@ where
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// # fn main() -> ndsparse::Result<()> {
   /// use ndsparse::coo::CooVec;
-  /// use rand::{seq::SliceRandom, thread_rng};
-  /// let mut rng = thread_rng();
+  /// use rand::{rngs::mock::StepRng, seq::SliceRandom};
+  /// let mut rng = StepRng::new(0, 1);
   /// let upper_bound = 5;
-  /// let random: ndsparse::Result<CooVec<[usize; 8], u8>>;
+  /// let random: ndsparse::Result<CooVec<u8, 8>>;
   /// random = CooVec::new_random_rand(&mut rng, upper_bound);
   /// assert!(random?.dims().choose(&mut rng).unwrap() < &upper_bound);
   /// # Ok(()) }
@@ -244,5 +231,14 @@ where
     let max_nnz = crate::utils::max_nnz(&dims);
     let nnz = if max_nnz == 0 { 0 } else { rng.gen_range(0, max_nnz) };
     Self::new_controlled_random_rand(dims, nnz, rng, |rng, _| rng.gen())
+  }
+}
+
+impl<DS, const D: usize> Default for Coo<DS, D>
+where
+  DS: Default,
+{
+  fn default() -> Self {
+    Self { data: DS::default(), dims: crate::utils::default_array() }
   }
 }

@@ -1,15 +1,11 @@
-use crate::{utils::windows2, Dims};
-use cl_traits::ArrayWrapper;
+use crate::utils::windows2;
 
 macro_rules! create_value {
   ($get:ident $fn_name:ident $([$mut:tt])?) => {
-    pub fn $fn_name<DA, DATA>(
-      indcs: ArrayWrapper<DA>,
-      data: &$($mut)? [(ArrayWrapper<DA>, DATA)],
-    ) -> Option<&$($mut)? DATA>
-    where
-      DA: Dims
-    {
+    pub fn $fn_name<DATA, const D: usize>(
+      indcs: [usize; D],
+      data: &$($mut)? [([usize; D], DATA)],
+    ) -> Option<&$($mut)? DATA> {
       if let Ok(idx) = data.binary_search_by(|value| value.0.cmp(&indcs)) {
         Some(&$($mut)? data.$get(idx)?.1)
       } else {

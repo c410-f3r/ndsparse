@@ -1,17 +1,16 @@
 [dependencies]
-cl-traits = { default-features = false, version = "4.0" }
+cl-traits = { default-features = false, git = "https://github.com/c410-f3r/cl-traits" }
 rand = { default-features = false, optional = true, version = "0.7" }
 rayon = { default-features = false, optional = true, version = "1.0" }
-serde = { default-features = false, features = ["derive"], optional = true, version = "1.0" }
+serde = { branch = "const-gen", default-features = false, features = ["const-generics", "derive"], optional = true, git = "https://github.com/c410-f3r/serde" }
 
 [features]
-alloc = ["cl-traits/alloc", "rand/alloc", "serde/alloc"]
-const-generics = ["cl-traits/const-generics"]
+alloc = ["cl-traits/alloc"]
 default = []
-std = ["alloc", "cl-traits/std", "rand/std", "serde/std"]
+std = ["alloc", "cl-traits/std"]
 with-rand = ["rand"]
 with-rayon = ["rayon", "std"]
-with-serde = ["cl-traits/with-serde", "rand/serde1", "serde"]
+with-serde = ["serde"]
 
 [package]
 authors = ["Caio Fernandes <c410.f3r@gmail.com>"]

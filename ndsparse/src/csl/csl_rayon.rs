@@ -1,6 +1,6 @@
 use crate::{
   csl::{CslLineIterMut, CslLineIterRef, CslMut, CslRef},
-  Dims, ParallelIteratorWrapper, ParallelProducerWrapper,
+  ParallelIteratorWrapper, ParallelProducerWrapper,
 };
 use rayon::iter::{
   plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer},
@@ -9,12 +9,12 @@ use rayon::iter::{
 
 macro_rules! create_rayon_iter {
   ($csl_rayon_iter:ident, $ref:ident) => {
-    impl<'a, DA, T> ParallelIterator for ParallelIteratorWrapper<$csl_rayon_iter<'a, DA, T>>
+    impl<'a, T, const D: usize> ParallelIterator
+      for ParallelIteratorWrapper<$csl_rayon_iter<'a, T, D>>
     where
-      DA: Dims + Send + Sync,
       T: Send + Sync + 'a,
     {
-      type Item = $ref<'a, DA, T>;
+      type Item = $ref<'a, T, D>;
       fn drive_unindexed<C>(self, consumer: C) -> C::Result
       where
         C: UnindexedConsumer<Self::Item>,
@@ -27,9 +27,9 @@ macro_rules! create_rayon_iter {
       }
     }
 
-    impl<'a, DA, T> IndexedParallelIterator for ParallelIteratorWrapper<$csl_rayon_iter<'a, DA, T>>
+    impl<'a, T, const D: usize> IndexedParallelIterator
+      for ParallelIteratorWrapper<$csl_rayon_iter<'a, T, D>>
     where
-      DA: Dims + Send + Sync,
       T: Send + Sync + 'a,
     {
       fn with_producer<Cb>(self, callback: Cb) -> Cb::Output
@@ -51,12 +51,11 @@ macro_rules! create_rayon_iter {
       }
     }
 
-    impl<'a, DA, T> IntoIterator for ParallelProducerWrapper<$csl_rayon_iter<'a, DA, T>>
+    impl<'a, T, const D: usize> IntoIterator for ParallelProducerWrapper<$csl_rayon_iter<'a, T, D>>
     where
-      DA: Dims,
       T: 'a,
     {
-      type IntoIter = $csl_rayon_iter<'a, DA, T>;
+      type IntoIter = $csl_rayon_iter<'a, T, D>;
       type Item = <Self::IntoIter as Iterator>::Item;
 
       fn into_iter(self) -> Self::IntoIter {
@@ -64,12 +63,11 @@ macro_rules! create_rayon_iter {
       }
     }
 
-    impl<'a, DA, T> Producer for ParallelProducerWrapper<$csl_rayon_iter<'a, DA, T>>
+    impl<'a, T, const D: usize> Producer for ParallelProducerWrapper<$csl_rayon_iter<'a, T, D>>
     where
-      DA: Dims + Send,
       T: Send + Sync + 'a,
     {
-      type IntoIter = $csl_rayon_iter<'a, DA, T>;
+      type IntoIter = $csl_rayon_iter<'a, T, D>;
       type Item = <Self::IntoIter as Iterator>::Item;
 
       fn into_iter(self) -> Self::IntoIter {

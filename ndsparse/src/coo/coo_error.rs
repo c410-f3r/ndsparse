@@ -31,13 +31,13 @@ pub enum CooError {
 
   /// nnz is greater than the maximum permitted number of nnz
   ///
-  #[cfg_attr(feature = "alloc", doc = "```rust")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
+  #[cfg_attr(all(feature = "alloc", feature = "with-rand"), doc = "```rust")]
+  #[cfg_attr(not(all(feature = "alloc", feature = "with-rand")), doc = "```ignore")]
   /// use ndsparse::coo::{CooError, CooVec};
-  /// use rand::{thread_rng, Rng};
-  /// let mut rng = thread_rng();
+  /// use rand::{Rng, rngs::mock::StepRng};
+  /// let mut rng = StepRng::new(0, 1);
   /// let dims = [1, 2, 3]; // Max of 6 elements (1 * 2 * 3)
-  /// let coo: ndsparse::Result<CooVec<[usize; 3], u8>>;
+  /// let coo: ndsparse::Result<CooVec<u8, 3>>;
   /// coo = CooVec::new_controlled_random_rand(dims, 10, &mut rng, |r, _| r.gen());
   /// assert_eq!(coo, Err(ndsparse::Error::Coo(CooError::NnzGreaterThanMaximumNnz)));
   /// ```

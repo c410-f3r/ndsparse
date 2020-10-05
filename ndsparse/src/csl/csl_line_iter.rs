@@ -1,37 +1,27 @@
-use crate::{
-  csl::{outermost_offs, CslError, CslMut, CslRef},
-  Dims,
-};
-use cl_traits::ArrayWrapper;
+use crate::csl::{outermost_offs, CslError, CslMut, CslRef};
 use core::mem;
 
 macro_rules! impl_iter {
   ($csl_iter:ident, $data_type:ty, $split_at:ident, $ref:ident) => {
     /// Iterator of a CSL dimension.
     #[derive(Debug, PartialEq)]
-    pub struct $csl_iter<'a, DA, T>
-    where
-      DA: Dims,
-    {
+    pub struct $csl_iter<'a, T, const D: usize> {
       curr_idx: usize,
       data: $data_type,
-      dims: ArrayWrapper<DA>,
+      dims: [usize; D],
       indcs: &'a [usize],
       max_idx: usize,
       offs: &'a [usize],
     }
 
-    impl<'a, DA, T> $csl_iter<'a, DA, T>
-    where
-      DA: Dims,
-    {
+    impl<'a, T, const D: usize> $csl_iter<'a, T, D> {
       pub(crate) fn new(
-        mut dims: ArrayWrapper<DA>,
+        mut dims: [usize; D],
         data: $data_type,
         indcs: &'a [usize],
         offs: &'a [usize],
       ) -> crate::Result<Self> {
-        if let Some(r) = dims.slice_mut().first_mut() {
+        if let Some(r) = dims.first_mut() {
           let max_idx = *r;
           *r = 1;
           Ok($csl_iter { curr_idx: 0, data, dims, indcs, max_idx, offs })
@@ -67,10 +57,7 @@ macro_rules! impl_iter {
       }
     }
 
-    impl<'a, DA, T> DoubleEndedIterator for $csl_iter<'a, DA, T>
-    where
-      DA: Dims,
-    {
+    impl<'a, T, const D: usize> DoubleEndedIterator for $csl_iter<'a, T, D> {
       fn next_back(&mut self) -> Option<Self::Item> {
         if self.curr_idx == 0 {
           return None;
@@ -92,13 +79,10 @@ macro_rules! impl_iter {
       }
     }
 
-    impl<'a, DA, T> ExactSizeIterator for $csl_iter<'a, DA, T> where DA: Dims {}
+    impl<'a, T, const D: usize> ExactSizeIterator for $csl_iter<'a, T, D> {}
 
-    impl<'a, DA, T> Iterator for $csl_iter<'a, DA, T>
-    where
-      DA: Dims,
-    {
-      type Item = $ref<'a, DA, T>;
+    impl<'a, T, const D: usize> Iterator for $csl_iter<'a, T, D> {
+      type Item = $ref<'a, T, D>;
 
       fn next(&mut self) -> Option<Self::Item> {
         if self.curr_idx >= self.max_idx {

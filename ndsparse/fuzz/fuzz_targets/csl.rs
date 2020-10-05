@@ -17,7 +17,7 @@ struct Values {
 }
 
 fuzz_target!(|values: Values| {
-  let csl: CslVec<_, i32>;
+  let csl: CslVec<i32, 3>;
 
   csl = if let Ok(r) = CslVec::new(values.dims, values.data, values.indcs, values.offs) {
     r

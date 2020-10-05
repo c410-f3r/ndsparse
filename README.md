@@ -67,25 +67,20 @@ fn main() -> ndsparse::Result<()> {
 ## Optional features
 
 - `alloc` and `std`
-- Constant generics
 - Bindings (Py03, wasm-bindgen)
 - Deserialization/Serialization (serde)
 - Parallel iterators (rayon)
 - Random instances (rand)
 
-## Nightly compiler
-
-If dimensions or array storages with arbitrary length are needed, then it is necessary to include the `const-generics` feature that is only available when using a nightly Rustc compiler.
-
 ## Future
 
-Although CSR and COO are general sparse structures, they aren't good enough for certain situations, threfore, the existence of DIA, JDS, ELL, LIL, DOK and many others.
+Although CSR and COO are general sparse structures, they aren't good enough for certain situations, therefore, the existence of DIA, JDS, ELL, LIL, DOK and many others.
 
 If there are enough interest, the mentioned sparse storages might be added at some point in the future.
 
 ## Algebra library
 
-This project isn't and will never be a sparse algebra library because of its own self-contained responsability and complexity. Futhermore, a good implementation of such library would require a titanic amout of work and research for different algorithms, operations, decompositions, solvers and hardwares.
+This project isn't and will never be a sparse algebra library because of its own self-contained responsibility and complexity. Futhermore, a good implementation of such library would require a titanic amount of work and research for different algorithms, operations, decompositions, solvers and hardwares.
 
 ## Alternatives
 
@@ -93,7 +88,7 @@ One of these libraries might suit you better:
 
 * [`sprs`][sprs]: Sparse linear algebra.
 * [`ndarray`][ndarray]: Dense N-dimensional operations.
-* [`nalgebra`][nalgebra]: Dense linear albegra.
+* [`nalgebra`][nalgebra]: Dense linear algebra.
 
 [nalgebra]: https://github.com/rustsim/nalgebra
 [ndarray]: https://github.com/rust-ndarray/ndarray

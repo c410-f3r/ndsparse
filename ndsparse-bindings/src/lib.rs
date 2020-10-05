@@ -5,6 +5,7 @@
 //! the overhead of heap allocating.
 
 #![allow(clippy::all, clippy::restriction, unused_qualifications, unsafe_code)]
+#![feature(min_const_generics)]
 
 use ndsparse::csl::Csl;
 #[cfg(feature = "with-pyo3")]
@@ -26,7 +27,7 @@ macro_rules! create_csl {
     #[derive(Debug)]
     /// Wrapper around [`Csl`](ndsparse::csl::Csl).
     pub struct $struct_name {
-      csl: Csl<[usize; $dims], $data_storage, $indcs_storage, $offs_storage>,
+      csl: Csl<$data_storage, $indcs_storage, $offs_storage, $dims>,
     }
 
     // Generic
@@ -146,11 +147,7 @@ create_csl!(Csl6VecF64, f64, Vec<f64>, Vec<usize>, Vec<usize>, 6);
 create_csl!(Csl7VecF64, f64, Vec<f64>, Vec<usize>, Vec<usize>, 7);
 
 #[cfg(feature = "with-wasm-bindgen")]
-fn from_vec_to_array<A>(vec: Vec<A::Item>) -> Result<A, JsValue>
-where
-  A: cl_traits::Array,
-  A::Item: Copy,
-{
+fn from_vec_to_array<const N: usize>(vec: Vec<usize>) -> Result<[usize; N], JsValue> {
   let f = |idx| vec.get(idx).copied().ok_or(());
-  cl_traits::create_array_rslt(f).map_err(|_| JsValue::from_str("Insufficient to fill array"))
+  cl_traits::try_create_array(f).map_err(|_| JsValue::from_str("Insufficient to fill array"))
 }

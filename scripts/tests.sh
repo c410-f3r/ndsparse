@@ -1,22 +1,6 @@
 #!/usr/bin/env bash
 
-set -eux
-
-export RUST_BACKTRACE=full
-export RUSTFLAGS='
-    -D bad_style
-    -D future_incompatible
-    -D missing_debug_implementations
-    -D missing_docs
-    -D nonstandard_style
-    -D rust_2018_compatibility
-    -D rust_2018_idioms
-    -D trivial_casts
-    -D unsafe_code
-    -D unused_lifetimes
-    -D unused_qualifications
-    -D warnings
-'
+. "$(dirname "$0")/commons.sh" --source-only
 
 check_package_generic() {
     local package=$1
@@ -53,3 +37,16 @@ test_package_with_feature() {
     /bin/echo -e "\e[0;33m***** Testing ${package} with feature '${feature}' *****\e[0m\n"
     cargo test --manifest-path "$(dirname "$0")/../${package}"/Cargo.toml --features "${feature}" --no-default-features
 }
+
+# `check` because of https://github.com/PyO3/pyo3/issues/340
+check_package_generic "ndsparse-bindings"
+
+test_package_generic "ndsparse"
+
+test_package_with_feature "ndsparse" "alloc"
+test_package_with_feature "ndsparse" "std"
+test_package_with_feature "ndsparse" "with-rand"
+test_package_with_feature "ndsparse" "with-rayon"
+test_package_with_feature "ndsparse" "with-serde"
+
+run_package_example "ndsparse-examples" "dynamic_arrays"

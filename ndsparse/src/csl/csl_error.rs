@@ -44,7 +44,7 @@ pub enum CslError {
   #[cfg_attr(feature = "alloc", doc = "```rust")]
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::csl::{CslError, CslVec};
-  /// let csl: ndsparse::Result<CslVec<[usize; 5], i32>>;
+  /// let csl: ndsparse::Result<CslVec<i32, 5>>;
   /// csl = CslVec::new([1, 2, 3, 0, 5], vec![], vec![], vec![]);
   /// assert_eq!(csl, Err(ndsparse::Error::Csl(CslError::InnermostDimsZero)));
   /// ```
@@ -54,7 +54,7 @@ pub enum CslError {
   #[cfg_attr(feature = "alloc", doc = "```rust")]
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::csl::{CslVec, CslError};
-  /// let csl = CslVec::<[usize; 0], i32>::default();
+  /// let csl = CslVec::<i32, 0>::default();
   /// assert_eq!(csl.outermost_line_iter(), Err(ndsparse::Error::Csl(CslError::InvalidIterDim)));
   /// ```
   InvalidIterDim,
@@ -89,13 +89,13 @@ pub enum CslError {
   LastOffsetDifferentNnz,
 
   /// nnz is greater than the maximum permitted number of nnz
-  #[cfg_attr(feature = "alloc", doc = "```rust")]
-  #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
+  #[cfg_attr(all(feature = "alloc", feature = "with-rand"), doc = "```rust")]
+  #[cfg_attr(not(all(feature = "alloc", feature = "with-rand")), doc = "```ignore")]
   /// use ndsparse::csl::CslVec;
-  /// use rand::{thread_rng, Rng};
-  /// let mut rng = thread_rng();
+  /// use rand::{Rng, rngs::mock::StepRng};
+  /// let mut rng = StepRng::new(0, 1);
   /// let dims = [1, 2, 3]; // Max of 6 elements (1 * 2 * 3)
-  /// let csl: ndsparse::Result<CslVec<[usize; 3], i32>>;
+  /// let csl: ndsparse::Result<CslVec<i32, 3>>;
   /// csl = CslVec::new_controlled_random_rand(dims, 7, &mut rng, |r, _| r.gen());
   /// assert_eq!(csl, Err(ndsparse::Error::Csl(ndsparse::csl::CslError::NnzGreaterThanMaximumNnz)));
   /// ```

@@ -1,7 +1,4 @@
-use crate::{
-  csl::{correct_offs_len, outermost_stride, Csl, CslError},
-  Dims,
-};
+use crate::csl::{correct_offs_len, outermost_stride, Csl, CslError};
 use cl_traits::{Push, Storage};
 use core::cmp::Ordering;
 use rand::{
@@ -10,24 +7,20 @@ use rand::{
 };
 
 #[derive(Debug)]
-pub struct CslRnd<'a, DA, DS, IS, OS, R>
-where
-  DA: Dims,
-{
-  csl: &'a mut Csl<DA, DS, IS, OS>,
+pub struct CslRnd<'a, DS, IS, OS, R, const D: usize> {
+  csl: &'a mut Csl<DS, IS, OS, D>,
   nnz: usize,
   rng: &'a mut R,
 }
 
-impl<'a, DA, DATA, DS, IS, OS, R> CslRnd<'a, DA, DS, IS, OS, R>
+impl<'a, DATA, DS, IS, OS, R, const D: usize> CslRnd<'a, DS, IS, OS, R, D>
 where
-  DA: Dims,
   DS: AsMut<[DATA]> + AsRef<[DATA]> + Push<Input = DATA> + Storage<Item = DATA>,
   IS: AsMut<[usize]> + AsRef<[usize]> + Push<Input = usize>,
   R: Rng,
   OS: AsMut<[usize]> + AsRef<[usize]> + Push<Input = usize>,
 {
-  pub fn new(csl: &'a mut Csl<DA, DS, IS, OS>, nnz: usize, rng: &'a mut R) -> crate::Result<Self> {
+  pub fn new(csl: &'a mut Csl<DS, IS, OS, D>, nnz: usize, rng: &'a mut R) -> crate::Result<Self> {
     if nnz > crate::utils::max_nnz(&csl.dims) {
       return Err(CslError::NnzGreaterThanMaximumNnz.into());
     }
@@ -36,12 +29,12 @@ where
 
   pub fn fill<F>(mut self, cb: F) -> crate::Result<()>
   where
-    F: FnMut(&mut R, DA) -> DATA,
+    F: FnMut(&mut R, [usize; D]) -> DATA,
   {
-    let last_dim_idx = if self.csl.dims.slice().is_empty() {
+    let last_dim_idx = if self.csl.dims.is_empty() {
       return Ok(());
     } else {
-      self.csl.dims.slice().len() - 1
+      self.csl.dims.len() - 1
     };
     crate::Error::opt(self.fill_offs(last_dim_idx))?;
     crate::Error::opt(self.fill_indcs(last_dim_idx))?;
@@ -51,7 +44,7 @@ where
 
   fn fill_data<F>(&mut self, mut cb: F, last_dim_idx: usize) -> Option<()>
   where
-    F: FnMut(&mut R, DA) -> DATA,
+    F: FnMut(&mut R, [usize; D]) -> DATA,
   {
     let data = &mut self.csl.data;
     let indcs = self.csl.indcs.as_ref();
@@ -60,16 +53,15 @@ where
     let rng = &mut self.rng;
 
     for (line_idx, offset) in self.csl.offs.as_ref().windows(2).enumerate() {
-      let mut dims = *orig_dims;
-      *dims.slice_mut().first_mut()? =
-        if outermost_stride == 0 { 0 } else { line_idx % outermost_stride };
-      let iter = dims.slice_mut().iter_mut().zip(orig_dims.slice().iter()).skip(1).rev().skip(1);
+      let mut dims = orig_dims;
+      *dims.first_mut()? = if outermost_stride == 0 { 0 } else { line_idx % outermost_stride };
+      let iter = dims.iter_mut().zip(orig_dims.iter()).skip(1).rev().skip(1);
       for (dim, &orig_dim) in iter {
         *dim = if orig_dim == 0 { 0 } else { line_idx % orig_dim };
       }
       let range = *offset.first()?..*offset.get(1)?;
       for innermost_idx in indcs.get(range)?.iter().copied() {
-        *dims.slice_mut().get_mut(last_dim_idx)? = innermost_idx;
+        *dims.get_mut(last_dim_idx)? = innermost_idx;
         data.push(cb(rng, dims));
       }
     }
@@ -85,7 +77,7 @@ where
       let mut counter = 0;
       let line_nnz = offset.get(1)? - offset.first()?;
       while counter < line_nnz {
-        let rnd = rng.gen_range(0, *dims.slice().get(last_dim_idx)?);
+        let rnd = rng.gen_range(0, *dims.get(last_dim_idx)?);
         if !indcs.as_ref().get(*offset.first()?..)?.contains(&rnd) {
           indcs.push(rnd);
           counter += 1;
@@ -144,7 +136,7 @@ where
           break;
         }
         Ordering::Less => {
-          let innermost_dim_len = *self.csl.dims.slice().get(last_dim_idx)?;
+          let innermost_dim_len = *self.csl.dims.get(last_dim_idx)?;
           let line_nnz = f(innermost_dim_len, idx, self)?;
           let new_nnz = previous_nnz + line_nnz;
           *self.csl.offs.as_mut().get_mut(idx)? = new_nnz;

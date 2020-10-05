@@ -1,5 +1,4 @@
-use crate::Dims;
-use cl_traits::ArrayWrapper;
+use cl_traits::create_array;
 
 #[cfg(feature = "with-rayon")]
 /// Parallel iterator for Rayon implementation. This is mostly an internal detail.
@@ -30,6 +29,13 @@ where
   slice.iter().all(|x| x < upper_bound)
 }
 
+pub fn default_array<T, const N: usize>() -> [T; N]
+where
+  T: Default,
+{
+  create_array(|_| T::default())
+}
+
 pub fn has_duplicates<T>(slice: &[T]) -> bool
 where
   T: PartialEq,
@@ -45,20 +51,17 @@ where
 }
 
 #[inline]
-pub fn max_nnz<DA>(dims: &ArrayWrapper<DA>) -> usize
-where
-  DA: Dims,
-{
-  if dims == &ArrayWrapper::default() {
+pub fn max_nnz<const D: usize>(dims: &[usize; D]) -> usize {
+  if dims == &default_array() {
     return 0;
   }
-  if let Some(first) = dims.slice().first().copied() {
-    if DA::CAPACITY == 1 {
+  if let Some(first) = dims.get(0).copied() {
+    if D == 1 {
       return first;
     }
 
     let mut product: usize = 1;
-    for dim in dims.slice().iter().copied().filter(|dim| dim != &0) {
+    for dim in dims.iter().copied().filter(|dim| dim != &0) {
       product = product.saturating_mul(dim);
     }
     return product;
@@ -67,18 +70,17 @@ where
 }
 
 #[cfg(feature = "with-rand")]
-pub fn valid_random_dims<A, R>(rng: &mut R, upper_bound: usize) -> ArrayWrapper<A>
+pub fn valid_random_dims<R, const D: usize>(rng: &mut R, upper_bound: usize) -> [usize; D]
 where
-  A: Dims,
   R: rand::Rng,
 {
-  let dims = ArrayWrapper::default();
-  if A::CAPACITY == 0 {
+  let dims = default_array();
+  if D == 0 {
     return dims;
   }
-  let cut_point = rng.gen_range(0, A::CAPACITY);
-  let mut array: A = *dims;
-  let iter = if let Some(r) = array.slice_mut().get_mut(cut_point..) {
+  let cut_point = rng.gen_range(0, D);
+  let mut array = dims;
+  let iter = if let Some(r) = array.get_mut(cut_point..) {
     r.iter_mut()
   } else {
     return dims;

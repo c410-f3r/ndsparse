@@ -1,34 +1,30 @@
-use crate::{csl::Csl, Dims};
+use crate::csl::Csl;
 use cl_traits::{Push, Storage};
 use core::fmt;
 
 /// Constructs valid lines in a easy and interactive manner, abstracting away the complexity
 /// of the compressed sparse format.
 #[derive(Debug, PartialEq)]
-pub struct CslLineConstructor<'a, DA, DS, IS, PS>
-where
-  DA: Dims,
-{
-  csl: &'a mut Csl<DA, DS, IS, PS>,
+pub struct CslLineConstructor<'a, DS, IS, OS, const D: usize> {
+  csl: &'a mut Csl<DS, IS, OS, D>,
   curr_dim_idx: usize,
   last_off: usize,
 }
 
-impl<'a, DA, DATA, DS, IS, PS> CslLineConstructor<'a, DA, DS, IS, PS>
+impl<'a, DATA, DS, IS, OS, const D: usize> CslLineConstructor<'a, DS, IS, OS, D>
 where
-  DA: Dims,
   DS: AsRef<[DATA]> + Push<Input = DATA> + Storage<Item = DATA>,
   IS: AsRef<[usize]> + Push<Input = usize>,
-  PS: AsRef<[usize]> + Push<Input = usize>,
+  OS: AsRef<[usize]> + Push<Input = usize>,
 {
-  pub(crate) fn new(csl: &'a mut Csl<DA, DS, IS, PS>) -> crate::Result<Self> {
-    if DA::CAPACITY == 0 {
+  pub(crate) fn new(csl: &'a mut Csl<DS, IS, OS, D>) -> crate::Result<Self> {
+    if D == 0 {
       return Err(CslLineConstructorError::EmptyDimension.into());
     }
-    let curr_dim_idx = if let Some(idx) = csl.dims.slice().iter().copied().position(|x| x != 0) {
+    let curr_dim_idx = if let Some(idx) = csl.dims.iter().copied().position(|x| x != 0) {
       idx
     } else {
-      csl.dims.slice().len()
+      csl.dims.len()
     };
     let last_off = Self::last_off(&*csl);
     Ok(Self { csl, curr_dim_idx, last_off })
@@ -41,7 +37,7 @@ where
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// # fn main() -> ndsparse::Result<()> {
   /// use ndsparse::csl::{CslRef, CslVec};
-  /// let mut csl = CslVec::<[usize; 3], i32>::default();
+  /// let mut csl = CslVec::<i32, 3>::default();
   /// csl
   ///   .constructor()?
   ///   .next_outermost_dim(3)?
@@ -69,7 +65,7 @@ where
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// # fn main() -> ndsparse::Result<()> {
   /// use ndsparse::csl::{CslRef, CslVec};
-  /// let mut csl = CslVec::<[usize; 3], i32>::default();
+  /// let mut csl = CslVec::<i32, 3>::default();
   /// let constructor = csl.constructor()?.next_outermost_dim(3)?;
   /// constructor.push_empty_line().next_outermost_dim(2)?.push_empty_line();
   /// assert_eq!(csl.line([0, 0, 0]), CslRef::new([3], &[][..], &[][..], &[0, 0][..]).ok());
@@ -95,7 +91,7 @@ where
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// # fn main() -> ndsparse::Result<()> {
   /// use ndsparse::csl::{CslRef, CslVec};
-  /// let mut csl = CslVec::<[usize; 3], i32>::default();
+  /// let mut csl = CslVec::<i32, 3>::default();
   /// csl.constructor()?.next_outermost_dim(50)?.push_line([(1, 1), (40, 2)].iter().copied())?;
   /// let line = csl.line([0, 0, 0]);
   /// assert_eq!(line, CslRef::new([50], &[1, 2][..], &[1, 40][..], &[0, 2][..]).ok());
@@ -143,18 +139,18 @@ where
   // CLIPPY: self.curr_dim_idx always points to a valid reference
   #[allow(clippy::unwrap_used)]
   fn curr_dim(&mut self) -> &mut usize {
-    self.csl.dims.slice_mut().get_mut(self.curr_dim_idx).unwrap()
+    self.csl.dims.get_mut(self.curr_dim_idx).unwrap()
   }
 
   // CLIPPY: Constructor doesn't contain empty dimensions
   #[allow(clippy::unwrap_used)]
   fn last_dim(&mut self) -> usize {
-    *self.csl.dims.slice().last().unwrap()
+    *self.csl.dims.last().unwrap()
   }
 
   // CLIPPY: Offsets always have at least one element
   #[allow(clippy::unwrap_used)]
-  fn last_off(csl: &Csl<DA, DS, IS, PS>) -> usize {
+  fn last_off(csl: &Csl<DS, IS, OS, D>) -> usize {
     *csl.offs.as_ref().last().unwrap()
   }
 }

@@ -16,7 +16,7 @@ struct Values {
 fuzz_target!(|values: Values| {
   let real_data = values.data.into_iter().map(|x| (x.0.into(), x.1)).collect::<Vec<_>>();
 
-  let coo: CooVec<_, i32> = if let Ok(r) = CooVec::new(values.dims, real_data) {
+  let coo: CooVec<i32, 3> = if let Ok(r) = CooVec::new(values.dims, real_data) {
     r
   } else {
     return;
