@@ -25,8 +25,8 @@ jobs:
           crate: cargo-fuzz
           use-tool-cache: true
 
-      - run: cd ndsparse/fuzz; cargo fuzz run coo -- -runs=10000
-      - run: cd ndsparse/fuzz; cargo fuzz run csl -- -runs=10000
+      - run: cargo fuzz run coo -- -runs=10000
+      - run: cargo fuzz run csl -- -runs=10000
 
   tests:
     name: Tests

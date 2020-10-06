@@ -1,23 +1,23 @@
 [[bin]]
 name = "coo"
-path = "fuzz_targets/coo.rs"
+path = "coo.rs"
 
 [[bin]]
 name = "csl"
-path = "fuzz_targets/csl.rs"
+path = "csl.rs"
 
 [[bin]]
 name = "random_coo"
-path = "fuzz_targets/random_coo.rs"
+path = "random_coo.rs"
 
 [[bin]]
 name = "random_csl"
-path = "fuzz_targets/random_csl.rs"
+path = "random_csl.rs"
 
 [dependencies]
 arbitrary = { default-features = false, features = ["derive"], version = "0.4" }
 libfuzzer-sys = { default-features = false, version = "0.3" }
-ndsparse = { default-features = false, features = ["alloc", "with-rand", "with-rayon"], path = ".." }
+ndsparse = { default-features = false, features = ["alloc", "with-rand", "with-rayon"], path = "../ndsparse" }
 rand = { default-features = false, version = "0.7" }
 rayon = { default-features = false, version = "1.0" }
 
@@ -33,5 +33,4 @@ version = "0.0.0"
 cargo-fuzz = true
 
 [workspace]
-members = ["."]
 

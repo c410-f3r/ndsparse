@@ -16,4 +16,3 @@ publish = false
 version = "0.0.0"
 
 [workspace]
-members = ["."]
