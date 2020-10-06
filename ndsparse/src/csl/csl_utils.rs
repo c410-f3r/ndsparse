@@ -104,7 +104,7 @@ pub(crate) fn correct_offs_len<const D: usize>(dims: &[usize; D]) -> crate::Resu
   match D {
     0 => Ok(1),
     1 => Ok(2),
-    _ if dims == &crate::utils::default_array() => Ok(1),
+    _ if dims == &cl_traits::default_array() => Ok(1),
     _ => {
       let mut offs_len: usize = 1;
       for dim in dims.iter().copied().rev().skip(1).filter(|dim| dim != &0) {

@@ -1,5 +1,3 @@
-use cl_traits::create_array;
-
 #[cfg(feature = "with-rayon")]
 /// Parallel iterator for Rayon implementation. This is mostly an internal detail.
 #[derive(Debug)]
@@ -29,13 +27,6 @@ where
   slice.iter().all(|x| x < upper_bound)
 }
 
-pub fn default_array<T, const N: usize>() -> [T; N]
-where
-  T: Default,
-{
-  create_array(|_| T::default())
-}
-
 pub fn has_duplicates<T>(slice: &[T]) -> bool
 where
   T: PartialEq,
@@ -52,7 +43,7 @@ where
 
 #[inline]
 pub fn max_nnz<const D: usize>(dims: &[usize; D]) -> usize {
-  if dims == &default_array() {
+  if dims == &cl_traits::default_array() {
     return 0;
   }
   if let Some(first) = dims.get(0).copied() {
@@ -74,7 +65,7 @@ pub fn valid_random_dims<R, const D: usize>(rng: &mut R, upper_bound: usize) -> 
 where
   R: rand::Rng,
 {
-  let dims = default_array();
+  let dims = cl_traits::default_array();
   if D == 0 {
     return dims;
   }

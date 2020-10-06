@@ -92,7 +92,7 @@ where
   pub fn with_capacity(nnz: usize, nolp1: usize) -> Self {
     Self {
       data: DS::with_capacity(nnz),
-      dims: crate::utils::default_array(),
+      dims: cl_traits::default_array(),
       indcs: IS::with_capacity(nnz),
       offs: OS::with_capacity(nolp1),
     }
@@ -412,7 +412,7 @@ where
     IS: Clear,
     OS: Clear + Push<Input = usize>,
   {
-    self.dims = crate::utils::default_array();
+    self.dims = cl_traits::default_array();
     self.data.clear();
     self.indcs.clear();
     self.offs.clear();
@@ -615,7 +615,7 @@ where
     offs.push(0);
     Self {
       data: Default::default(),
-      dims: crate::utils::default_array(),
+      dims: cl_traits::default_array(),
       indcs: Default::default(),
       offs,
     }

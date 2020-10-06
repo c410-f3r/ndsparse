@@ -239,6 +239,6 @@ where
   DS: Default,
 {
   fn default() -> Self {
-    Self { data: DS::default(), dims: crate::utils::default_array() }
+    Self { data: DS::default(), dims: cl_traits::default_array() }
   }
 }
