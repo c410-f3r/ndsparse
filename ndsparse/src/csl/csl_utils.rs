@@ -1,5 +1,5 @@
 use crate::csl::{Csl, CslError, CslMut, CslRef};
-use cl_traits::try_create_array;
+use cl_traits::{try_create_array, Push};
 use core::ops::Range;
 
 macro_rules! create_sub_dim {
@@ -11,7 +11,7 @@ macro_rules! create_sub_dim {
     $line_fn:ident
     $sub_dim_fn:ident
     $([$mut:tt])?
-) => {
+  ) => {
 
 #[inline]
 pub fn $line_fn<'a: 'b, 'b, DATA, DS, IS, OS, const D: usize>(
@@ -182,4 +182,17 @@ pub fn outermost_offs<const D: usize>(
 #[inline]
 pub fn outermost_stride<const D: usize>(dims: &[usize; D]) -> usize {
   dims.iter().skip(1).rev().skip(1).product::<usize>()
+}
+
+#[inline]
+pub fn manage_last_offset<OS>(offs: &mut OS) -> crate::Result<usize>
+where
+  OS: AsRef<[usize]> + Push<Input = usize>,
+{
+  Ok(if let Some(rslt) = offs.as_ref().last() {
+    *rslt
+  } else {
+    offs.push(0).map_err(|_| crate::Error::InsufficientCapacity)?;
+    0
+  })
 }

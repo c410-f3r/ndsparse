@@ -1,4 +1,4 @@
-use crate::csl::Csl;
+use crate::csl::{manage_last_offset, Csl};
 use cl_traits::{Push, Storage};
 use core::fmt;
 
@@ -26,7 +26,7 @@ where
     } else {
       csl.dims.len()
     };
-    let last_off = Self::last_off(&*csl);
+    let last_off = manage_last_offset(&mut csl.offs)?;
     Ok(Self { csl, curr_dim_idx, last_off })
   }
 
@@ -44,7 +44,7 @@ where
   ///   .push_line([(0, 1)].iter().copied())?
   ///   .next_outermost_dim(4)?
   ///   .push_line([(1, 2)].iter().copied())?
-  ///   .push_empty_line()
+  ///   .push_empty_line()?
   ///   .push_line([(0, 3), (1,4)].iter().copied())?;
   /// assert_eq!(
   ///   csl.sub_dim(0..4),
@@ -67,12 +67,12 @@ where
   /// use ndsparse::csl::{CslRef, CslVec};
   /// let mut csl = CslVec::<i32, 3>::default();
   /// let constructor = csl.constructor()?.next_outermost_dim(3)?;
-  /// constructor.push_empty_line().next_outermost_dim(2)?.push_empty_line();
+  /// constructor.push_empty_line()?.next_outermost_dim(2)?.push_empty_line()?;
   /// assert_eq!(csl.line([0, 0, 0]), CslRef::new([3], &[][..], &[][..], &[0, 0][..]).ok());
   /// # Ok(()) }
-  pub fn push_empty_line(self) -> Self {
-    self.csl.offs.push(self.last_off);
-    self
+  pub fn push_empty_line(self) -> crate::Result<Self> {
+    self.csl.offs.push(self.last_off).map_err(|_| crate::Error::InsufficientCapacity)?;
+    Ok(self)
   }
 
   /// Pushes a new compressed line, modifying the internal structure and if applicable,
@@ -107,31 +107,32 @@ where
     let mut nnz = 0;
 
     let mut push = |curr_last_off, curr_nnz, idx, value| {
-      self.csl.indcs.push(idx);
-      self.csl.data.push(value);
+      self.csl.indcs.push(idx).map_err(|_| crate::Error::InsufficientCapacity)?;
+      self.csl.data.push(value).map_err(|_| crate::Error::InsufficientCapacity)?;
       nnz = curr_nnz;
       last_off = curr_last_off;
+      Ok::<(), crate::Error>(())
     };
 
     let mut last_line_idx = if let Some((curr_last_off, (curr_nnz, (idx, value)))) = iter.next() {
-      push(curr_last_off, curr_nnz, idx, value);
+      push(curr_last_off, curr_nnz, idx, value)?;
       idx
     } else {
-      return Ok(self.push_empty_line());
+      return self.push_empty_line();
     };
 
     for (curr_last_off, (curr_nnz, (idx, value))) in iter {
       if idx <= last_line_idx {
         return Err(CslLineConstructorError::UnsortedIndices.into());
       }
-      push(curr_last_off, curr_nnz, idx, value);
+      push(curr_last_off, curr_nnz, idx, value)?;
       last_line_idx = idx;
     }
 
     if nnz == 0 {
-      return Ok(self.push_empty_line());
+      return self.push_empty_line();
     }
-    self.csl.offs.push(last_off);
+    self.csl.offs.push(last_off).map_err(|_| crate::Error::InsufficientCapacity)?;
     self.last_off = last_off;
     Ok(self)
   }
@@ -146,12 +147,6 @@ where
   #[allow(clippy::unwrap_used)]
   fn last_dim(&mut self) -> usize {
     *self.csl.dims.last().unwrap()
-  }
-
-  // CLIPPY: Offsets always have at least one element
-  #[allow(clippy::unwrap_used)]
-  fn last_off(csl: &Csl<DS, IS, OS, D>) -> usize {
-    *csl.offs.as_ref().last().unwrap()
   }
 }
 

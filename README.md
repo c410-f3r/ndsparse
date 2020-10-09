@@ -41,9 +41,9 @@ fn main() -> ndsparse::Result<()> {
     .next_outermost_dim(2)?
     .push_line([(0, 1.0)].iter().copied())?
     .next_outermost_dim(2)?
-    .push_empty_line()
+    .push_empty_line()?
     .next_outermost_dim(2)?
-    .push_empty_line()
+    .push_empty_line()?
     .push_line([(1, 2.0)].iter().copied())?;
   assert_eq!(coo.value([0, 0, 0]), csl.value([0, 0, 0]));
   assert_eq!(coo.value([1, 1, 1]), csl.value([1, 1, 1]));

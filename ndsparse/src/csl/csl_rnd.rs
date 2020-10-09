@@ -1,4 +1,4 @@
-use crate::csl::{correct_offs_len, outermost_stride, Csl, CslError};
+use crate::csl::{correct_offs_len, manage_last_offset, outermost_stride, Csl, CslError};
 use cl_traits::{Push, Storage};
 use core::cmp::Ordering;
 use rand::{
@@ -20,13 +20,16 @@ where
   R: Rng,
   OS: AsMut<[usize]> + AsRef<[usize]> + Push<Input = usize>,
 {
+  #[inline]
   pub fn new(csl: &'a mut Csl<DS, IS, OS, D>, nnz: usize, rng: &'a mut R) -> crate::Result<Self> {
     if nnz > crate::utils::max_nnz(&csl.dims) {
       return Err(CslError::NnzGreaterThanMaximumNnz.into());
     }
+    let _ = manage_last_offset(&mut csl.offs)?;
     Ok(Self { csl, nnz, rng })
   }
 
+  #[inline]
   pub fn fill<F>(mut self, cb: F) -> crate::Result<()>
   where
     F: FnMut(&mut R, [usize; D]) -> DATA,
@@ -36,12 +39,13 @@ where
     } else {
       self.csl.dims.len() - 1
     };
-    crate::Error::opt(self.fill_offs(last_dim_idx))?;
-    crate::Error::opt(self.fill_indcs(last_dim_idx))?;
-    crate::Error::opt(self.fill_data(cb, last_dim_idx))?;
+    self.fill_offs(last_dim_idx).ok_or(crate::Error::UnknownError)?;
+    self.fill_indcs(last_dim_idx).ok_or(crate::Error::UnknownError)?;
+    self.fill_data(cb, last_dim_idx).ok_or(crate::Error::UnknownError)?;
     Ok(())
   }
 
+  #[inline]
   fn fill_data<F>(&mut self, mut cb: F, last_dim_idx: usize) -> Option<()>
   where
     F: FnMut(&mut R, [usize; D]) -> DATA,
@@ -62,13 +66,14 @@ where
       let range = *offset.first()?..*offset.get(1)?;
       for innermost_idx in indcs.get(range)?.iter().copied() {
         *dims.get_mut(last_dim_idx)? = innermost_idx;
-        data.push(cb(rng, dims));
+        data.push(cb(rng, dims)).ok()?;
       }
     }
 
     Some(())
   }
 
+  #[inline]
   fn fill_indcs(&mut self, last_dim_idx: usize) -> Option<()> {
     let dims = &self.csl.dims;
     let rng = &mut self.rng;
@@ -79,7 +84,7 @@ where
       while counter < line_nnz {
         let rnd = rng.gen_range(0, *dims.get(last_dim_idx)?);
         if !indcs.as_ref().get(*offset.first()?..)?.contains(&rnd) {
-          indcs.push(rnd);
+          indcs.push(rnd).ok()?;
           counter += 1;
         }
       }
@@ -88,10 +93,11 @@ where
     Some(())
   }
 
+  #[inline]
   fn fill_offs(&mut self, last_dim_idx: usize) -> Option<()> {
     let nnz = self.nnz;
     for _ in 1..correct_offs_len(&self.csl.dims).ok()? {
-      self.csl.offs.push(0);
+      self.csl.offs.push(0).ok()?;
     }
     let fun = |idl, _, s: &mut Self| Some(Uniform::from(0..=idl).sample(s.rng));
     let mut last_visited_off = self.do_fill_offs(last_dim_idx, fun)?;
@@ -116,6 +122,7 @@ where
     Some(())
   }
 
+  #[inline]
   fn do_fill_offs<F>(&mut self, last_dim_idx: usize, mut f: F) -> Option<usize>
   where
     F: FnMut(usize, usize, &mut Self) -> Option<usize>,

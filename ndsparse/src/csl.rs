@@ -29,13 +29,10 @@ pub use {csl_error::*, csl_line_constructor::*, csl_line_iter::*};
 /// CSL backed by a static array.
 pub type CslArray<DATA, const D: usize, const N: usize, const O: usize> =
   Csl<[DATA; N], [usize; N], [usize; O], D>;
-
 /// CSL backed by a mutable slice
 pub type CslMut<'a, DATA, const D: usize> = Csl<&'a mut [DATA], &'a [usize], &'a [usize], D>;
-
 /// CSL backed by a slice
 pub type CslRef<'a, DATA, const D: usize> = Csl<&'a [DATA], &'a [usize], &'a [usize], D>;
-
 /// CSL backed by a dynamic vector.
 #[cfg(feature = "alloc")]
 pub type CslVec<DATA, const D: usize> = Csl<Vec<DATA>, Vec<usize>, Vec<usize>, D>;
@@ -128,10 +125,10 @@ where
   ///
   /// # Arguments
   ///
-  /// * `into_dims`: Array of dimensions
-  /// * `into_data`: Data collection
-  /// * `into_indcs`: Indices of each data item
-  /// * `into_offs`: Offset of each innermost line
+  /// * `dims`: Array of dimensions
+  /// * `data`: Data collection
+  /// * `indcs`: Indices of each data item
+  /// * `offs`: Offset of each innermost line
   ///
   /// # Example
   #[cfg_attr(feature = "alloc", doc = "```rust")]
@@ -143,20 +140,7 @@ where
   /// let mut _over_nine: ndsparse::Result<CslVec<(), 9001>>;
   /// _over_nine = CslVec::new([0; 9001], vec![], vec![], vec![]);
   /// ```
-  pub fn new<IDS, IIS, IOS>(
-    dims: [usize; D],
-    into_data: IDS,
-    into_indcs: IIS,
-    into_offs: IOS,
-  ) -> crate::Result<Self>
-  where
-    IDS: Into<DS>,
-    IIS: Into<IS>,
-    IOS: Into<OS>,
-  {
-    let data = into_data.into();
-    let indcs = into_indcs.into();
-    let offs = into_offs.into();
+  pub fn new(dims: [usize; D], data: DS, indcs: IS, offs: OS) -> crate::Result<Self> {
     let data_ref = data.as_ref();
     let indcs_ref = indcs.as_ref();
     let offs_ref = offs.as_ref();
@@ -410,13 +394,12 @@ where
   where
     DS: Clear,
     IS: Clear,
-    OS: Clear + Push<Input = usize>,
+    OS: Clear,
   {
     self.dims = cl_traits::default_array();
     self.data.clear();
     self.indcs.clear();
     self.offs.clear();
-    self.offs.push(0);
   }
 
   /// See [`CslLineConstructor`](CslLineConstructor) for more information.
@@ -485,41 +468,44 @@ where
     false
   }
 
-  /// Truncates all values in the exactly exclusive point defined by `indcs`.
+  /// Truncates all values in the exactly exclusive line defined by `indcs`. The last index is ignored.
   ///
   /// # Example
   #[cfg_attr(feature = "alloc", doc = "```rust")]
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::{csl::CslVec, doc_tests::csl_vec_4};
   /// let mut csl = csl_vec_4();
-  /// csl.truncate([0, 0, 3, 4]);
+  /// csl.truncate([0, 0, 3, 0]);
   /// assert_eq!(
   ///   Ok(csl),
-  ///   CslVec::new([0, 0, 4, 5], vec![1, 2, 3, 4], vec![0, 3, 1, 3], vec![0, 2, 3, 3, 4])
+  ///   CslVec::new([0, 0, 4, 5], vec![1, 2, 3], vec![0, 3, 1], vec![0, 2, 3, 3, 3])
   /// );
   /// ```
   pub fn truncate(&mut self, indcs: [usize; D])
   where
     DS: Truncate<Input = usize>,
     IS: Truncate<Input = usize>,
-    OS: Push<Input = usize> + Truncate<Input = usize>,
+    OS: AsMut<[usize]> + Truncate<Input = usize>,
   {
     let [offs_indcs, values] = if let Some(r) = line_offs(&self.dims, &indcs, self.offs.as_ref()) {
       r
     } else {
       return;
     };
-    let last_idx = if let Some(r) = indcs.last() {
-      *r
+    let cut_point = values.start;
+    self.data.truncate(cut_point);
+    self.indcs.truncate(cut_point);
+    self.offs.truncate(offs_indcs.end);
+    let iter = indcs.iter().zip(self.dims.iter_mut()).rev().skip(1).rev();
+    iter.filter(|&(a, _)| *a == 0).for_each(|(_, b)| *b = 0);
+    let before_last = if let Some(rslt) = self.offs.as_ref().get(offs_indcs.end.saturating_sub(2)) {
+      *rslt
     } else {
       return;
     };
-    let cut_point = values.start.saturating_add(1);
-    self.data.truncate(cut_point);
-    self.indcs.truncate(cut_point);
-    self.offs.truncate(offs_indcs.start.saturating_add(1));
-    self.offs.push(last_idx);
-    indcs.iter().zip(self.dims.iter_mut()).filter(|&(a, _)| *a == 0).for_each(|(_, b)| *b = 0);
+    if let Some(rslt) = self.offs.as_mut().get_mut(offs_indcs.end.saturating_sub(1)) {
+      *rslt = before_last;
+    }
   }
 
   /// Mutable version of [`value`](#method.value).
@@ -608,16 +594,14 @@ impl<DS, IS, OS, const D: usize> Default for Csl<DS, IS, OS, D>
 where
   DS: Default,
   IS: Default,
-  OS: Default + Push<Input = usize>,
+  OS: Default,
 {
   fn default() -> Self {
-    let mut offs: OS = Default::default();
-    offs.push(0);
     Self {
       data: Default::default(),
       dims: cl_traits::default_array(),
       indcs: Default::default(),
-      offs,
+      offs: Default::default(),
     }
   }
 }

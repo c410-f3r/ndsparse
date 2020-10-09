@@ -58,24 +58,20 @@ where
   ///
   /// # Arguments
   ///
-  /// * `into_dims`: Array of dimensions
-  /// * `into_data`: Data collection
+  /// * `dims`: Array of dimensions
+  /// * `data`: Data collection
   ///
   /// # Example
   #[cfg_attr(feature = "alloc", doc = "```rust")]
   #[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
   /// use ndsparse::coo::{CooArray, CooVec};
   /// // Sparse array ([8, _, _, _, _, 9, _, _, _, _])
-  /// let mut _sparse_array = CooArray::new([10], [([0].into(), 8.0), ([5].into(), 9.0)]);
+  /// let mut _sparse_array = CooArray::new([10], [([0], 8.0), ([5], 9.0)]);
   /// // A bunch of nothing for your overflow needs
   /// let mut _over_nine: ndsparse::Result<CooVec<(), 9001>>;
   /// _over_nine = CooVec::new([0; 9001], vec![]);
   /// ```
-  pub fn new<IDS>(dims: [usize; D], into_data: IDS) -> crate::Result<Self>
-  where
-    IDS: Into<DS>,
-  {
-    let data = into_data.into();
+  pub fn new(dims: [usize; D], data: DS) -> crate::Result<Self> {
     if !crate::utils::are_in_ascending_order(data.as_ref(), |a, b| [&a.0, &b.0]) {
       return Err(CooError::InvalidIndcsOrder.into());
     }
@@ -147,13 +143,14 @@ where
     + AsRef<[<DS as Storage>::Item]>
     + Default
     + Storage<Item = ([usize; D], DATA)>
+    + cl_traits::CapacityUpperBound<Output = usize>
     + cl_traits::Push<Input = <DS as Storage>::Item>,
 {
   /// Creates a new random and valid instance delimited by the passed arguments.
   ///
   /// # Arguments
   ///
-  /// * `into_dims`: Array of dimensions
+  /// * `dims`: Array of dimensions
   /// * `nnz`: Number of Non-Zero elements
   /// * `rng`: `rand::Rng` trait
   /// * `cb`: Callback to control data creation
@@ -183,6 +180,9 @@ where
       return Err(CooError::NnzGreaterThanMaximumNnz.into());
     }
     let mut data: DS = Default::default();
+    if nnz > data.as_ref().len() {
+      return Err(crate::Error::InsufficientCapacity.into());
+    }
     for _ in 0..nnz {
       let indcs: [usize; D] = cl_traits::create_array(|idx| {
         let dim = *dims.get(idx).unwrap_or(&0);
@@ -193,7 +193,7 @@ where
         }
       });
       if data.as_ref().iter().all(|value| value.0 != indcs) {
-        data.push({
+        let _ = data.push({
           let element = cb(rng, &indcs);
           (indcs, element)
         });

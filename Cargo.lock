@@ -15,7 +15,7 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 [[package]]
 name = "cl-traits"
 version = "4.1.0"
-source = "git+https://github.com/c410-f3r/cl-traits#1793f78332f755cc2b2dcec9ec372038e9a8504f"
+source = "git+https://github.com/c410-f3r/cl-traits#111793da8286c8f16ecb6886874d0f1f85e29c22"
 
 [[package]]
 name = "crossbeam-channel"
@@ -237,9 +237,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.42"
+version = "1.0.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c51d92969d209b54a98397e1b91c8ae82d8c87a7bb87df0b29aa2ad81454228"
+checksum = "1e2e59c50ed8f6b050b071aa7b6865293957a9af6b58b94f97c1c9434ad440ea"
 dependencies = [
  "proc-macro2",
  "quote",

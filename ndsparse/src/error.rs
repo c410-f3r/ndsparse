@@ -13,21 +13,10 @@ pub enum Error {
   Csl(CslError),
   /// CslLineConstructorError
   CslLineConstructor(CslLineConstructorError),
-  /// This is a bug within the internal logic and shouldn't have happened
-  InvalidOperation,
-  /// Couldn't unwrap optional element
-  NoElem,
-}
-
-#[cfg(feature = "with-rand")]
-impl Error {
-  pub(crate) fn opt<T>(opt: Option<T>) -> crate::Result<T> {
-    if let Some(r) = opt {
-      Ok(r)
-    } else {
-      Err(Self::NoElem)
-    }
-  }
+  /// The internal buffer can't store all necessary data
+  InsufficientCapacity,
+  /// An Unknown that probably shouldn't have happened
+  UnknownError,
 }
 
 impl fmt::Display for Error {
@@ -36,8 +25,8 @@ impl fmt::Display for Error {
       Self::Coo(ref x) => write!(f, "Coo({})", x),
       Self::Csl(ref x) => write!(f, "Csl({})", x),
       Self::CslLineConstructor(ref x) => write!(f, "CslLineConstructor({})", x),
-      Self::InvalidOperation => write!(f, "InvalidOperation"),
-      Self::NoElem => write!(f, "InvalidOperation"),
+      Self::InsufficientCapacity => write!(f, "Inefficient Capacity"),
+      Self::UnknownError => write!(f, "UnknownError"),
     }
   }
 }
