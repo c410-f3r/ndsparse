@@ -55,10 +55,10 @@ test_package_generic() {
 
 test_package_with_feature() {
     local package=$1
-    local feature=$2
+    local features=$2
 
-    /bin/echo -e "\e[0;33m***** Testing ${package} with feature '${feature}' *****\e[0m\n"
-    cargo test --manifest-path "${package}"/Cargo.toml --features "${feature}" --no-default-features
+    /bin/echo -e "\e[0;33m***** Testing ${package} with feature '${features}' *****\e[0m\n"
+    cargo test --manifest-path "${package}"/Cargo.toml --features "${features}" --no-default-features
 
     clippy $package "--features ${features}"
 }
@@ -73,7 +73,6 @@ test_package_with_feature "ndsparse" "with-rand"
 test_package_with_feature "ndsparse" "with-rayon"
 test_package_with_feature "ndsparse" "with-serde"
 
-test_package_with_feature "ndsparse-bindings" ""
 test_package_with_feature "ndsparse-bindings" "with-wasm-bindgen"
 
 run_package_example "ndsparse-examples" "dynamic_arrays"
