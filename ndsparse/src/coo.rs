@@ -71,6 +71,7 @@ where
   /// let mut _over_nine: ndsparse::Result<CooVec<(), 9001>>;
   /// _over_nine = CooVec::new([0; 9001], vec![]);
   /// ```
+  #[inline]
   pub fn new(dims: [usize; D], data: DS) -> crate::Result<Self> {
     if !crate::utils::are_in_ascending_order(data.as_ref(), |a, b| [&a.0, &b.0]) {
       return Err(CooError::InvalidIndcsOrder.into());
@@ -103,6 +104,7 @@ where
   /// use ndsparse::doc_tests::coo_array_5;
   /// assert_eq!(coo_array_5().data().first(), Some(&([0, 0, 1, 1, 2].into(), 1)));
   /// ```
+  #[inline]
   pub fn data(&self) -> &[([usize; D], DATA)] {
     self.data.as_ref()
   }
@@ -121,6 +123,7 @@ where
   /// assert_eq!(coo.value([0, 0, 0, 0, 0]), None);
   /// assert_eq!(coo.value([0, 2, 2, 0, 1]), Some(&4));
   /// ```
+  #[inline]
   pub fn value(&self, indcs: [usize; D]) -> Option<&DATA> {
     value(indcs, &self.data.as_ref())
   }
@@ -131,6 +134,7 @@ where
   DS: AsMut<[<DS as Storage>::Item]> + Storage<Item = ([usize; D], DATA)>,
 {
   /// Mutable version of [`value`](#method.value).
+  #[inline]
   pub fn value_mut(&mut self, indcs: [usize; D]) -> Option<&mut DATA> {
     value_mut(indcs, self.data.as_mut())
   }
@@ -143,7 +147,7 @@ where
     + AsRef<[<DS as Storage>::Item]>
     + Default
     + Storage<Item = ([usize; D], DATA)>
-    + cl_traits::CapacityUpperBound<Output = usize>
+    + cl_traits::CapacityUpperBound
     + cl_traits::Push<Input = <DS as Storage>::Item>,
 {
   /// Creates a new random and valid instance delimited by the passed arguments.
@@ -181,7 +185,7 @@ where
     }
     let mut data: DS = Default::default();
     if nnz > data.as_ref().len() {
-      return Err(crate::Error::InsufficientCapacity.into());
+      return Err(crate::Error::InsufficientCapacity);
     }
     for _ in 0..nnz {
       let indcs: [usize; D] = cl_traits::create_array(|idx| {
@@ -193,6 +197,8 @@ where
         }
       });
       if data.as_ref().iter().all(|value| value.0 != indcs) {
+        // CLIPPY: Capacity was already checked
+        #[allow(clippy::let_underscore_must_use)]
         let _ = data.push({
           let element = cb(rng, &indcs);
           (indcs, element)
@@ -238,6 +244,7 @@ impl<DS, const D: usize> Default for Coo<DS, D>
 where
   DS: Default,
 {
+  #[inline]
   fn default() -> Self {
     Self { data: DS::default(), dims: cl_traits::default_array() }
   }

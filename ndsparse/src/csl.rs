@@ -86,6 +86,7 @@ where
   /// let nnz = 2;
   /// let _ = CslVec::<i32, 3>::with_capacity(nnz, nolp1);
   /// ```
+  #[inline]
   pub fn with_capacity(nnz: usize, nolp1: usize) -> Self {
     Self {
       data: DS::with_capacity(nnz),
@@ -219,6 +220,7 @@ where
   /// use ndsparse::doc_tests::csl_array_4;
   /// assert_eq!(csl_array_4().data(), &[1, 2, 3, 4, 5, 6, 7, 8, 9]);
   /// ```
+  #[inline]
   pub fn data(&self) -> &[DATA] {
     self.data.as_ref()
   }
@@ -231,6 +233,7 @@ where
   /// use ndsparse::doc_tests::csl_array_4;
   /// assert_eq!(csl_array_4().indcs(), &[0, 3, 1, 3, 4, 2, 2, 4, 2]);
   /// ```
+  #[inline]
   pub fn indcs(&self) -> &[usize] {
     self.indcs.as_ref()
   }
@@ -245,6 +248,7 @@ where
   /// assert_eq!(csl.line([0, 0, 2, 0]), CslRef::new([5], &[][..], &[][..], &[3, 3][..]).ok());
   /// assert_eq!(csl.line([0, 1, 0, 0]), CslRef::new([5], &[6][..], &[2][..], &[5, 6][..]).ok());
   /// ```
+  #[inline]
   pub fn line(&self, indcs: [usize; D]) -> Option<CslRef<'_, DATA, 1>> {
     line(self, indcs)
   }
@@ -274,6 +278,7 @@ where
   ///   &[0, 2, 3, 3, 5, 6, 6, 6, 6, 7, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9]
   /// );
   /// ```
+  #[inline]
   pub fn offs(&self) -> &[usize] {
     self.offs.as_ref()
   }
@@ -299,6 +304,7 @@ where
   /// );
   /// assert_eq!(iter.next(), None);
   /// # Ok(()) }
+  #[inline]
   pub fn outermost_line_iter(&self) -> crate::Result<CslLineIterRef<'_, DATA, D>> {
     CslLineIterRef::new(self.dims, self.data.as_ref(), self.indcs.as_ref(), self.offs.as_ref())
   }
@@ -320,6 +326,7 @@ where
   /// # Ok(()) }
   /// ```
   #[cfg(feature = "with-rayon")]
+  #[inline]
   pub fn outermost_line_rayon_iter(
     &self,
   ) -> crate::Result<crate::ParallelIteratorWrapper<CslLineIterRef<'_, DATA, D>>> {
@@ -349,6 +356,7 @@ where
   ///   CslRef::new([2, 4, 5], &[6, 7, 8][..], &[2, 2, 4][..], &[5, 6, 6, 6, 6, 7, 8, 8, 8][..]).ok()
   /// );
   /// ```
+  #[inline]
   pub fn sub_dim<const TD: usize>(&self, range: Range<usize>) -> Option<CslRef<'_, DATA, TD>> {
     sub_dim(self, range)
   }
@@ -368,6 +376,7 @@ where
   /// let line = csl.line([0, 0, 3, 0]).unwrap();
   /// assert_eq!(line.value([3]), Some(&4));
   /// ```
+  #[inline]
   pub fn value(&self, indcs: [usize; D]) -> Option<&DATA> {
     let idx = data_idx(self, indcs)?;
     self.data.as_ref().get(idx)
@@ -390,6 +399,7 @@ where
   /// csl.clear();
   /// assert_eq!(csl, CslVec::default());
   /// ```
+  #[inline]
   pub fn clear(&mut self)
   where
     DS: Clear,
@@ -403,6 +413,7 @@ where
   }
 
   /// See [`CslLineConstructor`](CslLineConstructor) for more information.
+  #[inline]
   pub fn constructor(&mut self) -> crate::Result<CslLineConstructor<'_, DS, IS, OS, D>>
   where
     DS: Push<Input = DATA>,
@@ -413,22 +424,26 @@ where
   }
 
   /// Mutable version of [`data`](#method.data).
+  #[inline]
   pub fn data_mut(&mut self) -> &mut [DATA] {
     self.data.as_mut()
   }
 
   /// Mutable version of [`line`](#method.line).
+  #[inline]
   pub fn line_mut(&mut self, indcs: [usize; D]) -> Option<CslMut<'_, DATA, 1>> {
     line_mut(self, indcs)
   }
 
   /// Mutable version of [`outermost_line_iter`](#method.outermost_line_iter).
+  #[inline]
   pub fn outermost_line_iter_mut(&mut self) -> crate::Result<CslLineIterMut<'_, DATA, D>> {
     CslLineIterMut::new(self.dims, self.data.as_mut(), self.indcs.as_ref(), self.offs.as_ref())
   }
 
   /// Mutable version of [`outermost_line_rayon_iter`](#method.outermost_line_rayon_iter).
   #[cfg(feature = "with-rayon")]
+  #[inline]
   pub fn outermost_line_rayon_iter_mut(
     &mut self,
   ) -> crate::Result<crate::ParallelIteratorWrapper<CslLineIterMut<'_, DATA, D>>> {
@@ -436,6 +451,7 @@ where
   }
 
   /// Mutable version of [`sub_dim`](#method.sub_dim).
+  #[inline]
   pub fn sub_dim_mut<const TD: usize>(
     &mut self,
     range: Range<usize>,
@@ -458,6 +474,7 @@ where
   /// csl.swap_value([0, 0, 0, 0], [1, 0, 2, 2]);
   /// assert_eq!(csl.data(), &[9, 2, 3, 4, 5, 6, 7, 8, 1]);
   /// ```
+  #[inline]
   pub fn swap_value(&mut self, a: [usize; D], b: [usize; D]) -> bool {
     if let Some(a_idx) = data_idx(self, a) {
       if let Some(b_idx) = data_idx(self, b) {
@@ -509,6 +526,7 @@ where
   }
 
   /// Mutable version of [`value`](#method.value).
+  #[inline]
   pub fn value_mut(&mut self, indcs: [usize; D]) -> Option<&mut DATA> {
     let idx = data_idx(self, indcs)?;
     self.data.as_mut().get_mut(idx)
@@ -526,7 +544,7 @@ where
   ///
   /// # Arguments
   ///
-  /// * `into_dims`: Array of dimensions
+  /// * `dims`: Array of dimensions
   /// * `nnz`: Number of Non-Zero elements
   /// * `rng`: `rand::Rng` trait
   /// * `cb`: Callback to control data creation
@@ -596,6 +614,7 @@ where
   IS: Default,
   OS: Default,
 {
+  #[inline]
   fn default() -> Self {
     Self {
       data: Default::default(),

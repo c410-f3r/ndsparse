@@ -20,6 +20,7 @@ pub enum Error {
 }
 
 impl fmt::Display for Error {
+  #[inline]
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match *self {
       Self::Coo(ref x) => write!(f, "Coo({})", x),
@@ -35,18 +36,21 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {}
 
 impl From<CooError> for Error {
+  #[inline]
   fn from(f: CooError) -> Self {
     Self::Coo(f)
   }
 }
 
 impl From<CslError> for Error {
+  #[inline]
   fn from(f: CslError) -> Self {
     Self::Csl(f)
   }
 }
 
 impl From<CslLineConstructorError> for Error {
+  #[inline]
   fn from(f: CslLineConstructorError) -> Self {
     Self::CslLineConstructor(f)
   }

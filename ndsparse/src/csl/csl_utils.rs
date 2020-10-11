@@ -115,6 +115,7 @@ pub(crate) fn correct_offs_len<const D: usize>(dims: &[usize; D]) -> crate::Resu
   }
 }
 
+#[inline]
 pub fn data_idx<DATA, DS, IS, OS, const D: usize>(
   csl: &Csl<DS, IS, OS, D>,
   indcs: [usize; D],

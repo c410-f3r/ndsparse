@@ -8,6 +8,7 @@ pub struct ParallelIteratorWrapper<I>(pub(crate) I);
 #[derive(Debug)]
 pub struct ParallelProducerWrapper<I>(pub(crate) I);
 
+#[inline]
 pub fn are_in_ascending_order<'a, F, T, U>(slice: &'a [T], cb: F) -> bool
 where
   F: Fn(&'a T, &'a T) -> [&'a U; 2],
@@ -20,6 +21,7 @@ where
   })
 }
 
+#[inline]
 pub fn are_in_upper_bound<T>(slice: &[T], upper_bound: &T) -> bool
 where
   T: PartialOrd,
@@ -27,6 +29,7 @@ where
   slice.iter().all(|x| x < upper_bound)
 }
 
+#[inline]
 pub fn has_duplicates<T>(slice: &[T]) -> bool
 where
   T: PartialEq,
@@ -61,6 +64,7 @@ pub fn max_nnz<const D: usize>(dims: &[usize; D]) -> usize {
 }
 
 #[cfg(feature = "with-rand")]
+#[inline]
 pub fn valid_random_dims<R, const D: usize>(rng: &mut R, upper_bound: usize) -> [usize; D]
 where
   R: rand::Rng,

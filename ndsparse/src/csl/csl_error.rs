@@ -113,6 +113,7 @@ pub enum CslError {
 }
 
 impl fmt::Display for CslError {
+  #[inline]
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let s = match *self {
       Self::DataIndcsLengthGreaterThanDimsLength => "DataIndcsLengthGreaterThanDimsLength",
