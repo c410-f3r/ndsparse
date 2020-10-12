@@ -197,8 +197,10 @@ where
         }
       });
       if data.as_ref().iter().all(|value| value.0 != indcs) {
-        // CLIPPY: Capacity was already checked
-        #[allow(clippy::let_underscore_must_use)]
+        #[allow(
+          // Capacity was already checked
+          clippy::let_underscore_must_use
+        )]
         let _ = data.push({
           let element = cb(rng, &indcs);
           (indcs, element)

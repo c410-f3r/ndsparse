@@ -4,7 +4,13 @@
 //! The array support of these third-parties dependencies is minimum to non-existent, threfore,
 //! the overhead of heap allocating.
 
-#![allow(clippy::all, clippy::restriction, unused_qualifications, unsafe_code)]
+#![allow(
+  // Auto-generated code
+  clippy::all,
+  clippy::restriction,
+  unused_qualifications,
+  unsafe_code
+)]
 #![feature(min_const_generics)]
 
 use ndsparse::csl::Csl;

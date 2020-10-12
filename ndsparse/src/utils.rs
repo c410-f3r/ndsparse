@@ -89,8 +89,10 @@ where
 }
 
 #[inline]
-// windows is infallible
 pub fn windows2<'a: 'b, 'b, T>(slice: &'a [T]) -> impl Iterator<Item = [&'b T; 2]> {
-  #[allow(clippy::indexing_slicing)]
+  #[allow(
+    // Infallible
+    clippy::indexing_slicing
+  )]
   slice.windows(2).map(|value| [&value[0], &value[1]])
 }

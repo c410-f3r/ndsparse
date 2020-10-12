@@ -1,6 +1,9 @@
 //! Dynamic arrays
 
-#![allow(clippy::panic)]
+#![allow(
+  // Run-time logic
+  clippy::panic
+)]
 #![feature(min_const_generics)]
 
 use ndsparse::csl::{Csl, CslRef};

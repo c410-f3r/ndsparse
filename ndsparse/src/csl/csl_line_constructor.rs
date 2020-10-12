@@ -17,6 +17,7 @@ where
   IS: AsRef<[usize]> + Push<Input = usize>,
   OS: AsRef<[usize]> + Push<Input = usize>,
 {
+  #[inline]
   pub(crate) fn new(csl: &'a mut Csl<DS, IS, OS, D>) -> crate::Result<Self> {
     if D == 0 {
       return Err(CslLineConstructorError::EmptyDimension.into());
@@ -51,6 +52,7 @@ where
   ///   CslRef::new([4, 3], &[1, 2, 3, 4][..], &[0, 1, 0, 1][..], &[0, 1, 2, 2, 4][..]).ok()
   /// );
   /// # Ok(()) }
+  #[inline]
   pub fn next_outermost_dim(mut self, len: usize) -> crate::Result<Self> {
     self.curr_dim_idx =
       self.curr_dim_idx.checked_sub(1).ok_or(CslLineConstructorError::DimsOverflow)?;
@@ -70,6 +72,7 @@ where
   /// constructor.push_empty_line()?.next_outermost_dim(2)?.push_empty_line()?;
   /// assert_eq!(csl.line([0, 0, 0]), CslRef::new([3], &[][..], &[][..], &[0, 0][..]).ok());
   /// # Ok(()) }
+  #[inline]
   pub fn push_empty_line(self) -> crate::Result<Self> {
     self.csl.offs.push(self.last_off).map_err(|_| crate::Error::InsufficientCapacity)?;
     Ok(self)
@@ -137,14 +140,20 @@ where
     Ok(self)
   }
 
-  // CLIPPY: self.curr_dim_idx always points to a valid reference
-  #[allow(clippy::unwrap_used)]
+  #[allow(
+    // self.curr_dim_idx always points to a valid reference
+    clippy::unwrap_used
+  )]
+  #[inline]
   fn curr_dim(&mut self) -> &mut usize {
     self.csl.dims.get_mut(self.curr_dim_idx).unwrap()
   }
 
-  // CLIPPY: Constructor doesn't contain empty dimensions
-  #[allow(clippy::unwrap_used)]
+  #[allow(
+    // Constructor doesn't contain empty dimensions
+    clippy::unwrap_used
+  )]
+  #[inline]
   fn last_dim(&mut self) -> usize {
     *self.csl.dims.last().unwrap()
   }
