@@ -193,7 +193,7 @@ where
   Ok(if let Some(rslt) = offs.as_ref().last() {
     *rslt
   } else {
-    offs.push(0).map_err(|_| crate::Error::InsufficientCapacity)?;
+    offs.push(0).map_err(|_err| crate::Error::InsufficientCapacity)?;
     0
   })
 }

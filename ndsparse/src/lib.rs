@@ -3,8 +3,6 @@
 //! This crate provides structures to store and retrieve N-dimensional sparse data.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![doc(test(attr(deny(warnings))))]
-#![feature(min_const_generics)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

@@ -11,7 +11,6 @@
   unused_qualifications,
   unsafe_code
 )]
-#![feature(min_const_generics)]
 
 use ndsparse::csl::Csl;
 #[cfg(feature = "with-pyo3")]

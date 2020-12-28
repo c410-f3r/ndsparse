@@ -58,6 +58,7 @@ macro_rules! impl_iter {
     }
 
     impl<'a, T, const D: usize> DoubleEndedIterator for $csl_iter<'a, T, D> {
+      #[inline]
       fn next_back(&mut self) -> Option<Self::Item> {
         if self.curr_idx == 0 {
           return None;
@@ -84,6 +85,7 @@ macro_rules! impl_iter {
     impl<'a, T, const D: usize> Iterator for $csl_iter<'a, T, D> {
       type Item = $ref<'a, T, D>;
 
+      #[inline]
       fn next(&mut self) -> Option<Self::Item> {
         if self.curr_idx >= self.max_idx {
           return None;
@@ -104,6 +106,7 @@ macro_rules! impl_iter {
         })
       }
 
+      #[inline]
       fn size_hint(&self) -> (usize, Option<usize>) {
         (self.max_idx, Some(self.max_idx))
       }

@@ -141,6 +141,7 @@ where
   /// let mut _over_nine: ndsparse::Result<CslVec<(), 9001>>;
   /// _over_nine = CslVec::new([0; 9001], vec![], vec![], vec![]);
   /// ```
+  #[inline]
   pub fn new(dims: [usize; D], data: DS, indcs: IS, offs: OS) -> crate::Result<Self> {
     let data_ref = data.as_ref();
     let indcs_ref = indcs.as_ref();
@@ -498,6 +499,7 @@ where
   ///   CslVec::new([0, 0, 4, 5], vec![1, 2, 3], vec![0, 3, 1], vec![0, 2, 3, 3, 3])
   /// );
   /// ```
+  #[inline]
   pub fn truncate(&mut self, indcs: [usize; D])
   where
     DS: Truncate<Input = usize>,
@@ -559,6 +561,7 @@ where
   /// let mut _random: ndsparse::Result<CslVec<u8, 3>>;
   /// _random = CslVec::new_controlled_random_rand(dims, 9, &mut rng, |r, _| r.gen());
   /// ```
+  #[inline]
   pub fn new_controlled_random_rand<F, R>(
     dims: [usize; D],
     nnz: usize,
@@ -569,8 +572,7 @@ where
     F: FnMut(&mut R, [usize; D]) -> DATA,
     R: rand::Rng,
   {
-    let mut csl = Self::default();
-    csl.dims = dims;
+    let mut csl = Csl { dims, ..Default::default() };
     csl_rnd::CslRnd::new(&mut csl, nnz, rng)?.fill(cb)?;
     Self::new(csl.dims, csl.data, csl.indcs, csl.offs)
   }
@@ -596,6 +598,7 @@ where
   /// random = CslVec::new_random_rand(&mut rng, upper_bound);
   /// assert!(random?.dims().choose(&mut rng).unwrap() < &upper_bound);
   /// # Ok(()) }
+  #[inline]
   pub fn new_random_rand<R>(rng: &mut R, upper_bound: usize) -> crate::Result<Self>
   where
     R: rand::Rng,

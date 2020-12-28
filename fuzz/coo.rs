@@ -1,3 +1,5 @@
+//! Coo
+
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
@@ -14,7 +16,7 @@ struct Values {
 }
 
 fuzz_target!(|values: Values| {
-  let real_data = values.data.into_iter().map(|x| (x.0.into(), x.1)).collect::<Vec<_>>();
+  let real_data = values.data.into_iter().collect::<Vec<_>>();
 
   let coo: CooVec<i32, 3> = if let Ok(r) = CooVec::new(values.dims, real_data) {
     r

@@ -4,7 +4,6 @@
   // Run-time logic
   clippy::panic
 )]
-#![feature(min_const_generics)]
 
 use ndsparse::csl::{Csl, CslRef};
 

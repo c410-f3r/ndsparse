@@ -15,6 +15,8 @@ macro_rules! create_rayon_iter {
       T: Send + Sync + 'a,
     {
       type Item = $ref<'a, T, D>;
+
+      #[inline]
       fn drive_unindexed<C>(self, consumer: C) -> C::Result
       where
         C: UnindexedConsumer<Self::Item>,
@@ -22,6 +24,7 @@ macro_rules! create_rayon_iter {
         bridge(self, consumer)
       }
 
+      #[inline]
       fn opt_len(&self) -> Option<usize> {
         Some(self.0.len())
       }
@@ -32,22 +35,25 @@ macro_rules! create_rayon_iter {
     where
       T: Send + Sync + 'a,
     {
-      fn with_producer<Cb>(self, callback: Cb) -> Cb::Output
-      where
-        Cb: ProducerCallback<Self::Item>,
-      {
-        callback.callback(ParallelProducerWrapper(self.0))
-      }
-
-      fn len(&self) -> usize {
-        ExactSizeIterator::len(&self.0)
-      }
-
+      #[inline]
       fn drive<C>(self, consumer: C) -> C::Result
       where
         C: Consumer<Self::Item>,
       {
         bridge(self, consumer)
+      }
+
+      #[inline]
+      fn len(&self) -> usize {
+        ExactSizeIterator::len(&self.0)
+      }
+
+      #[inline]
+      fn with_producer<Cb>(self, callback: Cb) -> Cb::Output
+      where
+        Cb: ProducerCallback<Self::Item>,
+      {
+        callback.callback(ParallelProducerWrapper(self.0))
       }
     }
 
@@ -58,6 +64,7 @@ macro_rules! create_rayon_iter {
       type IntoIter = $csl_rayon_iter<'a, T, D>;
       type Item = <Self::IntoIter as Iterator>::Item;
 
+      #[inline]
       fn into_iter(self) -> Self::IntoIter {
         self.0
       }
@@ -70,10 +77,12 @@ macro_rules! create_rayon_iter {
       type IntoIter = $csl_rayon_iter<'a, T, D>;
       type Item = <Self::IntoIter as Iterator>::Item;
 
+      #[inline]
       fn into_iter(self) -> Self::IntoIter {
         self.0
       }
 
+      #[inline]
       fn split_at(self, i: usize) -> (Self, Self) {
         let [a, b] = self.0.split_at(i);
         (ParallelProducerWrapper(a), ParallelProducerWrapper(b))

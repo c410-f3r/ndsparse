@@ -74,7 +74,7 @@ where
   /// # Ok(()) }
   #[inline]
   pub fn push_empty_line(self) -> crate::Result<Self> {
-    self.csl.offs.push(self.last_off).map_err(|_| crate::Error::InsufficientCapacity)?;
+    self.csl.offs.push(self.last_off).map_err(|_err| crate::Error::InsufficientCapacity)?;
     Ok(self)
   }
 
@@ -99,6 +99,7 @@ where
   /// let line = csl.line([0, 0, 0]);
   /// assert_eq!(line, CslRef::new([50], &[1, 2][..], &[1, 40][..], &[0, 2][..]).ok());
   /// # Ok(()) }
+  #[inline]
   pub fn push_line<DI>(mut self, di: DI) -> crate::Result<Self>
   where
     DI: Iterator<Item = (usize, DATA)>,
@@ -110,8 +111,8 @@ where
     let mut nnz = 0;
 
     let mut push = |curr_last_off, curr_nnz, idx, value| {
-      self.csl.indcs.push(idx).map_err(|_| crate::Error::InsufficientCapacity)?;
-      self.csl.data.push(value).map_err(|_| crate::Error::InsufficientCapacity)?;
+      self.csl.indcs.push(idx).map_err(|_err| crate::Error::InsufficientCapacity)?;
+      self.csl.data.push(value).map_err(|_err| crate::Error::InsufficientCapacity)?;
       nnz = curr_nnz;
       last_off = curr_last_off;
       Ok::<(), crate::Error>(())
@@ -135,7 +136,7 @@ where
     if nnz == 0 {
       return self.push_empty_line();
     }
-    self.csl.offs.push(last_off).map_err(|_| crate::Error::InsufficientCapacity)?;
+    self.csl.offs.push(last_off).map_err(|_err| crate::Error::InsufficientCapacity)?;
     self.last_off = last_off;
     Ok(self)
   }
@@ -173,6 +174,7 @@ pub enum CslLineConstructorError {
 }
 
 impl fmt::Display for CslLineConstructorError {
+  #[inline]
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let s = match *self {
       Self::DimsOverflow => "DimsOverflow",

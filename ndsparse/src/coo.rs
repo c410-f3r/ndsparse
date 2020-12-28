@@ -169,6 +169,7 @@ where
   /// let mut _random: ndsparse::Result<CooVec<u8, 3>>;
   /// _random = CooVec::new_controlled_random_rand(dims, 3, &mut rng, |r, _| r.gen());
   /// ```
+  #[inline]
   pub fn new_controlled_random_rand<F, R>(
     dims: [usize; D],
     nnz: usize,
@@ -230,6 +231,7 @@ where
   /// random = CooVec::new_random_rand(&mut rng, upper_bound);
   /// assert!(random?.dims().choose(&mut rng).unwrap() < &upper_bound);
   /// # Ok(()) }
+  #[inline]
   pub fn new_random_rand<R>(rng: &mut R, upper_bound: usize) -> crate::Result<Self>
   where
     R: rand::Rng,
