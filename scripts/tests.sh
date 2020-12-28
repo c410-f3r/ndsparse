@@ -10,7 +10,7 @@ export RUST_BACKTRACE=1
 export RUSTFLAGS="$($rt rust-flags)"
 
 $rt rustfmt
-$rt clippy -Aclippy::clinteger_arithmetic
+$rt clippy -Aclippy::integer_arithmetic
 
 $rt test-generic ndsparse
 $rt test-with-features ndsparse alloc
