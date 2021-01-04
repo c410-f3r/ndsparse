@@ -9,7 +9,7 @@ pub struct ParallelIteratorWrapper<I>(pub(crate) I);
 pub struct ParallelProducerWrapper<I>(pub(crate) I);
 
 #[inline]
-pub fn are_in_ascending_order<'a, F, T, U>(slice: &'a [T], cb: F) -> bool
+pub(crate) fn are_in_ascending_order<'a, F, T, U>(slice: &'a [T], cb: F) -> bool
 where
   F: Fn(&'a T, &'a T) -> [&'a U; 2],
   T: 'a,
@@ -22,7 +22,7 @@ where
 }
 
 #[inline]
-pub fn are_in_upper_bound<T>(slice: &[T], upper_bound: &T) -> bool
+pub(crate) fn are_in_upper_bound<T>(slice: &[T], upper_bound: &T) -> bool
 where
   T: PartialOrd,
 {
@@ -30,7 +30,7 @@ where
 }
 
 #[inline]
-pub fn has_duplicates<T>(slice: &[T]) -> bool
+pub(crate) fn has_duplicates<T>(slice: &[T]) -> bool
 where
   T: PartialEq,
 {
@@ -45,7 +45,7 @@ where
 }
 
 #[inline]
-pub fn max_nnz<const D: usize>(dims: &[usize; D]) -> usize {
+pub(crate) fn max_nnz<const D: usize>(dims: &[usize; D]) -> usize {
   if dims == &cl_traits::default_array() {
     return 0;
   }
@@ -65,7 +65,7 @@ pub fn max_nnz<const D: usize>(dims: &[usize; D]) -> usize {
 
 #[cfg(feature = "with-rand")]
 #[inline]
-pub fn valid_random_dims<R, const D: usize>(rng: &mut R, upper_bound: usize) -> [usize; D]
+pub(crate) fn valid_random_dims<R, const D: usize>(rng: &mut R, upper_bound: usize) -> [usize; D]
 where
   R: rand::Rng,
 {
@@ -89,7 +89,7 @@ where
 }
 
 #[inline]
-pub fn windows2<'a: 'b, 'b, T>(slice: &'a [T]) -> impl Iterator<Item = [&'b T; 2]> {
+pub(crate) fn windows2<T>(slice: &[T]) -> impl Iterator<Item = [&T; 2]> {
   #[allow(
     // Infallible
     clippy::indexing_slicing

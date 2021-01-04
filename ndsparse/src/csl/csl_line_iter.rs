@@ -57,7 +57,7 @@ macro_rules! impl_iter {
       }
     }
 
-    impl<'a, T, const D: usize> DoubleEndedIterator for $csl_iter<'a, T, D> {
+    impl<T, const D: usize> DoubleEndedIterator for $csl_iter<'_, T, D> {
       #[inline]
       fn next_back(&mut self) -> Option<Self::Item> {
         if self.curr_idx == 0 {
@@ -80,7 +80,7 @@ macro_rules! impl_iter {
       }
     }
 
-    impl<'a, T, const D: usize> ExactSizeIterator for $csl_iter<'a, T, D> {}
+    impl<T, const D: usize> ExactSizeIterator for $csl_iter<'_, T, D> {}
 
     impl<'a, T, const D: usize> Iterator for $csl_iter<'a, T, D> {
       type Item = $ref<'a, T, D>;

@@ -7,7 +7,7 @@ use rand::{
 };
 
 #[derive(Debug)]
-pub struct CslRnd<'a, DS, IS, OS, R, const D: usize> {
+pub(crate) struct CslRnd<'a, DS, IS, OS, R, const D: usize> {
   csl: &'a mut Csl<DS, IS, OS, D>,
   nnz: usize,
   rng: &'a mut R,
@@ -21,7 +21,11 @@ where
   OS: AsMut<[usize]> + AsRef<[usize]> + Push<Input = usize>,
 {
   #[inline]
-  pub fn new(csl: &'a mut Csl<DS, IS, OS, D>, nnz: usize, rng: &'a mut R) -> crate::Result<Self> {
+  pub(crate) fn new(
+    csl: &'a mut Csl<DS, IS, OS, D>,
+    nnz: usize,
+    rng: &'a mut R,
+  ) -> crate::Result<Self> {
     if nnz > crate::utils::max_nnz(&csl.dims) {
       return Err(CslError::NnzGreaterThanMaximumNnz.into());
     }
@@ -30,7 +34,7 @@ where
   }
 
   #[inline]
-  pub fn fill<F>(mut self, cb: F) -> crate::Result<()>
+  pub(crate) fn fill<F>(mut self, cb: F) -> crate::Result<()>
   where
     F: FnMut(&mut R, [usize; D]) -> DATA,
   {
@@ -66,7 +70,7 @@ where
       let range = *offset.first()?..*offset.get(1)?;
       for innermost_idx in indcs.get(range)?.iter().copied() {
         *dims.get_mut(last_dim_idx)? = innermost_idx;
-        data.push(cb(rng, dims)).ok()?;
+        let _ = data.push(cb(rng, dims)).ok()?;
       }
     }
 
@@ -84,7 +88,7 @@ where
       while counter < line_nnz {
         let rnd = rng.gen_range(0, *dims.get(last_dim_idx)?);
         if !indcs.as_ref().get(*offset.first()?..)?.contains(&rnd) {
-          indcs.push(rnd).ok()?;
+          let _ = indcs.push(rnd).ok()?;
           counter += 1;
         }
       }
@@ -97,7 +101,7 @@ where
   fn fill_offs(&mut self, last_dim_idx: usize) -> Option<()> {
     let nnz = self.nnz;
     for _ in 1..correct_offs_len(&self.csl.dims).ok()? {
-      self.csl.offs.push(0).ok()?;
+      let _ = self.csl.offs.push(0).ok()?;
     }
     let fun = |idl, _, s: &mut Self| Some(Uniform::from(0..=idl).sample(s.rng));
     let mut last_visited_off = self.do_fill_offs(last_dim_idx, fun)?;

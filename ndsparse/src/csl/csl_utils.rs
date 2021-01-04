@@ -14,7 +14,7 @@ macro_rules! create_sub_dim {
   ) => {
 
 #[inline]
-pub fn $line_fn<'a: 'b, 'b, DATA, DS, IS, OS, const D: usize>(
+pub(crate) fn $line_fn<'a: 'b, 'b, DATA, DS, IS, OS, const D: usize>(
   csl: &'a $($mut)? Csl<DS, IS, OS, D>,
   indcs: [usize; D]
 ) -> Option<$ref<'b, DATA, 1>>
@@ -40,7 +40,7 @@ where
 }
 
 #[inline]
-pub fn $sub_dim_fn<'a: 'b, 'b, DATA: 'a, DS, IS, OS, const FD: usize, const TD: usize>(
+pub(crate) fn $sub_dim_fn<'a: 'b, 'b, DATA: 'a, DS, IS, OS, const FD: usize, const TD: usize>(
   csl: &'a $($mut)? Csl<DS, IS, OS, FD>,
   range: Range<usize>,
 ) -> Option<$ref<'b, DATA, TD>>
@@ -116,7 +116,7 @@ pub(crate) fn correct_offs_len<const D: usize>(dims: &[usize; D]) -> crate::Resu
 }
 
 #[inline]
-pub fn data_idx<DATA, DS, IS, OS, const D: usize>(
+pub(crate) fn data_idx<DATA, DS, IS, OS, const D: usize>(
   csl: &Csl<DS, IS, OS, D>,
   indcs: [usize; D],
 ) -> Option<usize>
@@ -136,7 +136,7 @@ where
 }
 
 #[inline]
-pub fn line_offs<const D: usize>(
+pub(crate) fn line_offs<const D: usize>(
   dims: &[usize; D],
   indcs: &[usize; D],
   offs: &[usize],
@@ -167,7 +167,7 @@ pub fn line_offs<const D: usize>(
 }
 
 #[inline]
-pub fn outermost_offs<const D: usize>(
+pub(crate) fn outermost_offs<const D: usize>(
   dims: &[usize; D],
   offs: &[usize],
   range: Range<usize>,
@@ -181,19 +181,19 @@ pub fn outermost_offs<const D: usize>(
 }
 
 #[inline]
-pub fn outermost_stride<const D: usize>(dims: &[usize; D]) -> usize {
+pub(crate) fn outermost_stride<const D: usize>(dims: &[usize; D]) -> usize {
   dims.iter().skip(1).rev().skip(1).product::<usize>()
 }
 
 #[inline]
-pub fn manage_last_offset<OS>(offs: &mut OS) -> crate::Result<usize>
+pub(crate) fn manage_last_offset<OS>(offs: &mut OS) -> crate::Result<usize>
 where
   OS: AsRef<[usize]> + Push<Input = usize>,
 {
   Ok(if let Some(rslt) = offs.as_ref().last() {
     *rslt
   } else {
-    offs.push(0).map_err(|_err| crate::Error::InsufficientCapacity)?;
+    let _ = offs.push(0).map_err(|_err| crate::Error::InsufficientCapacity)?;
     0
   })
 }

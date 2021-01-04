@@ -512,9 +512,9 @@ where
       return;
     };
     let cut_point = values.start;
-    self.data.truncate(cut_point);
-    self.indcs.truncate(cut_point);
-    self.offs.truncate(offs_indcs.end);
+    let _ = self.data.truncate(cut_point);
+    let _ = self.indcs.truncate(cut_point);
+    let _ = self.offs.truncate(offs_indcs.end);
     let iter = indcs.iter().zip(self.dims.iter_mut()).rev().skip(1).rev();
     iter.filter(|&(a, _)| *a == 0).for_each(|(_, b)| *b = 0);
     let before_last = if let Some(rslt) = self.offs.as_ref().get(offs_indcs.end.saturating_sub(2)) {

@@ -74,7 +74,7 @@ where
   /// # Ok(()) }
   #[inline]
   pub fn push_empty_line(self) -> crate::Result<Self> {
-    self.csl.offs.push(self.last_off).map_err(|_err| crate::Error::InsufficientCapacity)?;
+    let _ = self.csl.offs.push(self.last_off).map_err(|_err| crate::Error::InsufficientCapacity)?;
     Ok(self)
   }
 
@@ -111,8 +111,8 @@ where
     let mut nnz = 0;
 
     let mut push = |curr_last_off, curr_nnz, idx, value| {
-      self.csl.indcs.push(idx).map_err(|_err| crate::Error::InsufficientCapacity)?;
-      self.csl.data.push(value).map_err(|_err| crate::Error::InsufficientCapacity)?;
+      let _ = self.csl.indcs.push(idx).map_err(|_err| crate::Error::InsufficientCapacity)?;
+      let _ = self.csl.data.push(value).map_err(|_err| crate::Error::InsufficientCapacity)?;
       nnz = curr_nnz;
       last_off = curr_last_off;
       Ok::<(), crate::Error>(())
@@ -136,7 +136,7 @@ where
     if nnz == 0 {
       return self.push_empty_line();
     }
-    self.csl.offs.push(last_off).map_err(|_err| crate::Error::InsufficientCapacity)?;
+    let _ = self.csl.offs.push(last_off).map_err(|_err| crate::Error::InsufficientCapacity)?;
     self.last_off = last_off;
     Ok(self)
   }
