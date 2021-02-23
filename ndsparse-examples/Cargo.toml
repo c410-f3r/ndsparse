@@ -1,6 +1,6 @@
 [dependencies]
 arrayvec = { default-features = false, version = "0.5" }
-cl-traits = { default-features = false, features = ["with-arrayvec", "with-smallvec"], git = "https://github.com/c410-f3r/cl-traits" }
+cl-traits = { default-features = false, features = ["with-arrayvec", "with-smallvec"], version = "5.0" }
 ndsparse = { path = "../ndsparse" }
 smallvec = { default-features = false, version = "1.0" }
 

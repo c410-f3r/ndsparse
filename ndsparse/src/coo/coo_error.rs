@@ -2,6 +2,7 @@ use core::fmt;
 
 /// Any error related to `Coo` operations
 #[derive(Debug, PartialEq)]
+#[non_exhaustive]
 pub enum CooError {
   /// Some index isn't in asceding order
   ///

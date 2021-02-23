@@ -6,6 +6,7 @@ use core::fmt;
 
 /// Contains all errors related to ndsparse
 #[derive(Debug, PartialEq)]
+#[non_exhaustive]
 pub enum Error {
   /// CooError
   Coo(CooError),

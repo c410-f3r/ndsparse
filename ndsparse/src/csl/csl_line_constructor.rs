@@ -162,6 +162,7 @@ where
 
 /// Contains all errors related to CslLineConstructor.
 #[derive(Debug, PartialEq)]
+#[non_exhaustive]
 pub enum CslLineConstructorError {
   /// The maximum number of dimenstions has been reached
   DimsOverflow,

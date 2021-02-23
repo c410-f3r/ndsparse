@@ -90,9 +90,5 @@ where
 
 #[inline]
 pub(crate) fn windows2<T>(slice: &[T]) -> impl Iterator<Item = [&T; 2]> {
-  #[allow(
-    // Infallible
-    clippy::indexing_slicing
-  )]
-  slice.windows(2).map(|value| [&value[0], &value[1]])
+  slice.windows(2).filter_map(|value| Some([value.get(0)?, value.get(1)?]))
 }

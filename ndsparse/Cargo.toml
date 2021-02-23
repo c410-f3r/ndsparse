@@ -1,5 +1,5 @@
 [dependencies]
-cl-traits = { default-features = false, git = "https://github.com/c410-f3r/cl-traits" }
+cl-traits = { default-features = false, version = "5.0" }
 rand = { default-features = false, optional = true, version = "0.7" }
 rayon = { default-features = false, optional = true, version = "1.0" }
 serde = { branch = "const-gen", default-features = false, features = ["const-generics", "derive"], optional = true, git = "https://github.com/c410-f3r/serde" }

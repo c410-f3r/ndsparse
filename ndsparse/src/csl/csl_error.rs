@@ -2,6 +2,7 @@ use core::fmt;
 
 /// Any error related to Csl operations
 #[derive(Debug, PartialEq)]
+#[non_exhaustive]
 pub enum CslError {
   /// Data or indices length is greater than the product of all dimensions length
   ///

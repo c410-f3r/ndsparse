@@ -408,9 +408,9 @@ where
     OS: Clear,
   {
     self.dims = cl_traits::default_array();
-    self.data.clear();
-    self.indcs.clear();
-    self.offs.clear();
+    let _ = self.data.clear();
+    let _ = self.indcs.clear();
+    let _ = self.offs.clear();
   }
 
   /// See [`CslLineConstructor`](CslLineConstructor) for more information.
