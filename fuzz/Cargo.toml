@@ -18,7 +18,7 @@ path = "random_csl.rs"
 arbitrary = { default-features = false, features = ["derive"], version = "0.4" }
 libfuzzer-sys = { default-features = false, version = "0.3" }
 ndsparse = { default-features = false, features = ["alloc", "with-rand", "with-rayon"], path = "../ndsparse" }
-rand = { default-features = false, version = "0.7" }
+rand = { default-features = false, version = "0.8" }
 rayon = { default-features = false, version = "1.0" }
 
 [package]
