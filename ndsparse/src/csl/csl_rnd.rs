@@ -86,7 +86,7 @@ where
       let mut counter = 0;
       let line_nnz = offset.get(1)? - offset.first()?;
       while counter < line_nnz {
-        let rnd = rng.gen_range(0, *dims.get(last_dim_idx)?);
+        let rnd = rng.gen_range(0..*dims.get(last_dim_idx)?);
         if !indcs.as_ref().get(*offset.first()?..)?.contains(&rnd) {
           let _ = indcs.push(rnd).ok()?;
           counter += 1;

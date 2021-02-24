@@ -606,7 +606,7 @@ where
   {
     let dims = crate::utils::valid_random_dims(rng, upper_bound);
     let max_nnz = max_nnz(&dims);
-    let nnz = if max_nnz == 0 { 0 } else { rng.gen_range(0, max_nnz) };
+    let nnz = if max_nnz == 0 { 0 } else { rng.gen_range(0..max_nnz) };
     Self::new_controlled_random_rand(dims, nnz, rng, |rng, _| rng.gen())
   }
 }
