@@ -56,6 +56,7 @@ pub type CslVec<DATA, const D: usize> = Csl<Vec<DATA>, Vec<usize>, Vec<usize>, D
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Csl<DS, IS, OS, const D: usize> {
   pub(crate) data: DS,
+  #[cfg_attr(feature = "with-serde", serde(with = "serde_big_array::BigArray"))]
   pub(crate) dims: [usize; D],
   pub(crate) indcs: IS,
   pub(crate) offs: OS,

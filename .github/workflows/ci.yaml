@@ -18,7 +18,7 @@ jobs:
         with:
           override: true
           profile: minimal
-          toolchain: nightly-2021-02-21
+          toolchain: nightly-2021-03-21
 
       - uses: actions-rs/install@v0.1
         with:
@@ -41,7 +41,7 @@ jobs:
           components: clippy, rustfmt
           override: true
           profile: minimal
-          toolchain: beta
+          toolchain: stable
 
       - name: Cache cargo directories
         uses: actions/cache@v2

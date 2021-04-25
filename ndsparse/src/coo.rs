@@ -32,6 +32,7 @@ pub type CooVec<DATA, const D: usize> = Coo<Vec<([usize; D], DATA)>, D>;
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Coo<DS, const D: usize> {
   pub(crate) data: DS,
+  #[cfg_attr(feature = "with-serde", serde(with = "serde_big_array::BigArray"))]
   pub(crate) dims: [usize; D],
 }
 

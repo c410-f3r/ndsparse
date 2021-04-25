@@ -2,7 +2,8 @@
 cl-traits = { default-features = false, version = "5.0" }
 rand = { default-features = false, optional = true, version = "0.8" }
 rayon = { default-features = false, optional = true, version = "1.0" }
-serde = { branch = "const-gen", default-features = false, features = ["const-generics", "derive"], optional = true, git = "https://github.com/c410-f3r/serde" }
+serde = { default-features = false, features = ["derive"], optional = true, version = "1.0" }
+serde-big-array = { default-features = false, features = ["const-generics"], optional = true, version = "0.3" }
 
 [features]
 alloc = ["cl-traits/alloc"]
@@ -10,7 +11,7 @@ default = []
 std = ["alloc", "cl-traits/std"]
 with-rand = ["rand"]
 with-rayon = ["rayon", "std"]
-with-serde = ["serde"]
+with-serde = ["serde", "serde-big-array"]
 
 [package]
 authors = ["Caio Fernandes <c410.f3r@gmail.com>"]
