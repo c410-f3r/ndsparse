@@ -1,4 +1,9 @@
 [workspace]
-members = ["ndsparse"]
+members = [
+    "fuzz",
+    "ndsparse-bindings",
+    "ndsparse-examples",
+    "ndsparse",
+]
 resolver = "2"
 

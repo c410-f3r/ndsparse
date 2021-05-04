@@ -5,12 +5,7 @@
 //! the overhead of heap allocating.
 
 // Auto-generated code
-#![allow(
-  clippy::all,
-  clippy::restriction,
-  unused_qualifications,
-  unsafe_code
-)]
+#![allow(clippy::all, clippy::restriction, unused_qualifications, unsafe_code)]
 
 use ndsparse::csl::Csl;
 #[cfg(feature = "with-pyo3")]
@@ -79,7 +74,7 @@ macro_rules! create_csl {
         indcs: $indcs_storage,
         offs: $offs_storage,
       ) -> PyResult<Self> {
-        let map_err = |e| exceptions::TypeError::py_err(format!("{:?}", e));
+        let map_err = |e| exceptions::PyTypeError::new_err(format!("{:?}", e));
         let csl = Csl::new(dims, data, indcs, offs).map_err(map_err)?;
         Ok($struct_name { csl })
       }

@@ -1,5 +1,5 @@
 [dependencies]
-arrayvec = { default-features = false, version = "0.5" }
+arrayvec = { default-features = false, version = "0.7" }
 cl-traits = { default-features = false, features = ["with-arrayvec", "with-smallvec"], version = "5.0" }
 ndsparse = { path = "../ndsparse" }
 smallvec = { default-features = false, version = "1.0" }
@@ -14,5 +14,3 @@ license = "Apache-2.0"
 name = "ndsparse-examples"
 publish = false
 version = "0.0.0"
-
-[workspace]

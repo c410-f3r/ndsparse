@@ -15,8 +15,8 @@ name = "random_csl"
 path = "random_csl.rs"
 
 [dependencies]
-arbitrary = { default-features = false, features = ["derive"], version = "0.4" }
-libfuzzer-sys = { default-features = false, version = "0.3" }
+arbitrary = { default-features = false, features = ["derive"], version = "1.0" }
+libfuzzer-sys = { default-features = false, version = "0.4" }
 ndsparse = { default-features = false, features = ["alloc", "with-rand", "with-rayon"], path = "../ndsparse" }
 rand = { default-features = false, version = "0.8" }
 rayon = { default-features = false, version = "1.0" }
@@ -31,6 +31,3 @@ version = "0.0.0"
 
 [package.metadata]
 cargo-fuzz = true
-
-[workspace]
-

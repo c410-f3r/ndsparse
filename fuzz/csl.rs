@@ -1,3 +1,6 @@
+//! CSL
+
+#![allow(missing_docs)]
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
@@ -37,7 +40,5 @@ fuzz_target!(|values: Values| {
 
   if let Ok(r) = csl.outermost_line_rayon_iter() {
     r.enumerate().for_each(|(_, _)| {});
-  } else {
-    return;
-  };
+  }
 });

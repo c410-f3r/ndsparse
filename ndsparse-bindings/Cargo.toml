@@ -1,7 +1,7 @@
 [dependencies]
 cl-traits = { default-features = false, version = "5.0" }
 ndsparse = { default-features = false, features = ["alloc"], path = "../ndsparse" }
-pyo3 = { default-features = false, features = ["extension-module", "macros"], optional = true, version = "0.11" }
+pyo3 = { default-features = false, features = ["extension-module", "macros"], optional = true, version = "0.13" }
 wasm-bindgen = { default-features = false, features = ["std"], optional = true, version = "0.2" }
 
 [features]
@@ -18,5 +18,3 @@ license = "Apache-2.0"
 name = "ndsparse-bindings"
 publish = false
 version = "0.0.0"
-
-[workspace]
