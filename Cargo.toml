@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "fuzz",
     "ndsparse-bindings",
     "ndsparse-examples",
     "ndsparse",
