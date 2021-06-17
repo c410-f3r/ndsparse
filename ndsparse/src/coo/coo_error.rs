@@ -8,7 +8,7 @@ pub enum CooError {
   ///
   /// ```rust
   /// use ndsparse::coo::{CooArray, CooError};
-  /// let coo = CooArray::new([2, 2], [([1, 1].into(), 8), ([0, 0].into(), 9)]);
+  /// let coo = CooArray::new([2, 2], [([1, 1], 8), ([0, 0], 9)]);
   /// assert_eq!(coo, Err(ndsparse::Error::Coo(CooError::InvalidIndcsOrder)));
   /// ```
   InvalidIndcsOrder,
@@ -17,7 +17,7 @@ pub enum CooError {
   ///
   /// ```rust
   /// use ndsparse::coo::{CooArray, CooError};
-  /// let coo = CooArray::new([2, 2], [([0, 1].into(), 8), ([9, 9].into(), 9)]);
+  /// let coo = CooArray::new([2, 2], [([0, 1], 8), ([9, 9], 9)]);
   /// assert_eq!(coo, Err(ndsparse::Error::Coo(CooError::InvalidIndcs)));
   /// ```
   InvalidIndcs,
@@ -26,7 +26,7 @@ pub enum CooError {
   ///
   /// ```rust
   /// use ndsparse::coo::{CooArray, CooError};
-  /// let coo = CooArray::new([2, 2], [([0, 0].into(), 8), ([0, 0].into(), 9)]);
+  /// let coo = CooArray::new([2, 2], [([0, 0], 8), ([0, 0], 9)]);
   /// assert_eq!(coo, Err(ndsparse::Error::Coo(CooError::DuplicatedIndices)));
   DuplicatedIndices,
 

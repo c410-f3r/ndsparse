@@ -34,7 +34,7 @@ fn main() -> ndsparse::Result<()> {
   // /_1_/___/ /\/
   // \_1_\___\/ /
   //  \___\___\/
-  let coo = CooArray::new([2, 2, 2], [([0, 0, 0].into(), 1.0), ([1, 1, 1].into(), 2.0)])?;
+  let coo = CooArray::new([2, 2, 2], [([0, 0, 0], 1.0), ([1, 1, 1], 2.0)])?;
   let mut csl = CslVec::default();
   csl
     .constructor()?
